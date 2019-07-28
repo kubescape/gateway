@@ -1,5 +1,6 @@
 FROM scratch
-ADD websock_notify /capostman
+WORKDIR /
+ADD websock_notify /main
 EXPOSE 8001
 EXPOSE 8002
-CMD ["./capostman"]
+ENTRYPOINT ["/main"]
