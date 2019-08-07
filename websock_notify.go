@@ -94,16 +94,14 @@ func sendNotificationHandle(w http.ResponseWriter, r *http.Request) {
 			log.Println(err)
 			return
 		}
-		for {
-			for _, connection := range notificationMap[notificationId] {
-				s := string(readBuffer)
-				log.Print(s)
-				err = connection.WriteMessage(websocket.TextMessage, readBuffer)
-				if err != nil {
-					// Remove connection
-					log.Printf("connection %p is not alive", connection)
-					defer cleanupConnection(notificationId, connection)
-				}
+		for _, connection := range notificationMap[notificationId] {
+			s := string(readBuffer)
+			log.Print(s)
+			err = connection.WriteMessage(websocket.TextMessage, readBuffer)
+			if err != nil {
+				// Remove connection
+				log.Printf("connection %p is not alive", connection)
+				defer cleanupConnection(notificationId, connection)
 			}
 		}
 	} else {
