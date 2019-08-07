@@ -88,7 +88,7 @@ func sendNotificationHandle(w http.ResponseWriter, r *http.Request) {
 
 	if _, ok := notificationMap[notificationId]; ok {
 		log.Printf("Posting notification for %s", notificationId)
-
+		defer r.Body.Close()
 		readBuffer, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			log.Println(err)
