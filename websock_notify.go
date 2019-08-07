@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io/ioutil"
 	"log"
 	"net/http"
 	"regexp"
@@ -88,29 +89,22 @@ func sendNotificationHandle(w http.ResponseWriter, r *http.Request) {
 	if _, ok := notificationMap[notificationId]; ok {
 		log.Printf("Posting notification for %s", notificationId)
 
-		readBuffer := make([]byte, 2048)
+		readBuffer, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 		for {
-			c, err := r.Body.Read(readBuffer)
-			if err != nil && c <= 0 {
-				log.Println(err)
-				return
-			}
-
 			for _, connection := range notificationMap[notificationId] {
-				s := string([]byte(readBuffer[:c]))
+				s := string(readBuffer)
 				log.Print(s)
-				err = connection.WriteJSON(s)
+				err = connection.WriteMessage(websocket.TextMessage, readBuffer)
 				if err != nil {
 					// Remove connection
 					log.Printf("connection %p is not alive", connection)
 					defer cleanupConnection(notificationId, connection)
 				}
 			}
-
-			if c < 2048 {
-				break
-			}
-
 		}
 	} else {
 		http.NotFound(w, r)
