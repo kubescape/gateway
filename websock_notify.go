@@ -76,6 +76,28 @@ func waitForNotificationHandle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	notificationMap[notificationId] = append(notificationMap[notificationId], conn)
+
+	// Websocket ping pong
+	for {
+		msgType, _, err := conn.ReadMessage()
+		if err != nil {
+			log.Println("Read Error: ", err)
+			conn.WriteMessage(websocket.CloseMessage, []byte(""))
+			break
+		}
+
+		if msgType != websocket.PingMessage {
+			log.Println("Unrecognized message received.")
+			continue
+		}
+
+		err = conn.WriteMessage(websocket.PongMessage, []byte("pong"))
+		if err != nil {
+			log.Println("Write Error: ", err)
+			conn.WriteMessage(websocket.CloseMessage, []byte(""))
+			break
+		}
+	}
 }
 
 func sendNotificationHandle(w http.ResponseWriter, r *http.Request) {
