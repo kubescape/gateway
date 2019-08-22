@@ -74,6 +74,8 @@ func waitForNotificationHandle(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
+	defer conn.Close()
+	defer r.Body.Close()
 
 	notificationMap[notificationId] = append(notificationMap[notificationId], conn)
 
@@ -81,21 +83,24 @@ func waitForNotificationHandle(w http.ResponseWriter, r *http.Request) {
 	for {
 		msgType, _, err := conn.ReadMessage()
 		if err != nil {
-			log.Println("Read Error: ", err)
-			conn.WriteMessage(websocket.CloseMessage, []byte(""))
+			log.Printf("Read Error: %v, NotificationId: %s", err, notificationId)
+			defer cleanupConnection(notificationId, conn)
 			break
 		}
 
-		if msgType != websocket.PingMessage {
-			log.Println("Unrecognized message received.")
-			continue
-		}
-
-		err = conn.WriteMessage(websocket.PongMessage, []byte("pong"))
-		if err != nil {
-			log.Println("Write Error: ", err)
-			conn.WriteMessage(websocket.CloseMessage, []byte(""))
+		switch msgType {
+		case websocket.CloseMessage:
+			log.Printf("Connection closed, NotificationId: %s", notificationId)
+			defer cleanupConnection(notificationId, conn)
 			break
+		case websocket.PingMessage:
+			log.Printf("Ping %s.", notificationId)
+			err = conn.WriteMessage(websocket.PongMessage, []byte("pong"))
+			if err != nil {
+				log.Printf("Write Error: %v, NotificationId: %s", err, notificationId)
+				defer cleanupConnection(notificationId, conn)
+
+			}
 		}
 	}
 }
