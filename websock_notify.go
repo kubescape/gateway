@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -142,6 +143,8 @@ func sendNotificationHandle(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	flag.Parse()
+
 	notificationMap = make(map[string][]*websocket.Conn)
 
 	finish := make(chan bool)
