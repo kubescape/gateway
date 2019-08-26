@@ -135,6 +135,7 @@ func sendNotificationHandle(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	} else {
+		glog.Errorf("notificationID %s not found", notificationID)
 		http.NotFound(w, r)
 	}
 
