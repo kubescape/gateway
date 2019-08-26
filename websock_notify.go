@@ -2,13 +2,13 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"regexp"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/gorilla/websocket"
 )
 
@@ -55,7 +55,7 @@ func remove(s []*websocket.Conn, i int) []*websocket.Conn {
 func cleanupConnection(notificationID string, conn *websocket.Conn) {
 	for index, element := range notificationMap[notificationID] {
 		if element == conn {
-			log.Printf("%s, Removing notification", notificationID)
+			fmt.Printf("%s, Removing notification", notificationID)
 			notificationMap[notificationID] = remove(notificationMap[notificationID], index)
 			return
 		}
@@ -64,14 +64,14 @@ func cleanupConnection(notificationID string, conn *websocket.Conn) {
 
 func waitForNotificationHandle(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
-		log.Printf("Method not allowed")
+		fmt.Printf("Method not allowed")
 		http.Error(w, "Method not allowed", 405)
 		return
 	}
 
 	notificationID := strings.Split(r.URL.Path, "/")[2]
 
-	glog.Infof("%s, Requesting notification", notificationID)
+	log.Printf("%s, Requesting notification", notificationID)
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -81,7 +81,7 @@ func waitForNotificationHandle(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close()
 	defer r.Body.Close()
 
-	glog.Infof("%s, connected successfully", notificationID)
+	log.Printf("%s, connected successfully", notificationID)
 	notificationMap[notificationID] = append(notificationMap[notificationID], conn)
 
 	// Websocket ping pong
