@@ -55,6 +55,7 @@ func remove(s []*websocket.Conn, i int) []*websocket.Conn {
 func cleanupConnection(notificationID string, conn *websocket.Conn) {
 	for index, element := range notificationMap[notificationID] {
 		if element == conn {
+			glog.Infof("%s, Removing notification", notificationID)
 			notificationMap[notificationID] = remove(notificationMap[notificationID], index)
 			return
 		}
@@ -70,7 +71,7 @@ func waitForNotificationHandle(w http.ResponseWriter, r *http.Request) {
 
 	notificationID := strings.Split(r.URL.Path, "/")[2]
 
-	glog.Infof("Requesting notification for %s", notificationID)
+	glog.Infof("%s, Requesting notification", notificationID)
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -80,27 +81,28 @@ func waitForNotificationHandle(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close()
 	defer r.Body.Close()
 
+	glog.Infof("%s, connected successfully", notificationID)
 	notificationMap[notificationID] = append(notificationMap[notificationID], conn)
 
 	// Websocket ping pong
 	for {
 		msgType, _, err := conn.ReadMessage()
 		if err != nil {
-			glog.Errorf("Read Error: %v,\nnotificationID: %s", err, notificationID)
+			glog.Errorf("%s, read Error: %v", notificationID, err)
 			defer cleanupConnection(notificationID, conn)
 			break
 		}
 
 		switch msgType {
 		case websocket.CloseMessage:
-			glog.Errorf("Connection closed, NotificationId: %s", notificationID)
+			glog.Errorf("%s, Connection closed", notificationID)
 			defer cleanupConnection(notificationID, conn)
 			break
 		case websocket.PingMessage:
-			glog.Infof("Ping %s.", notificationID)
+			glog.Infof("%s, Ping", notificationID)
 			err = conn.WriteMessage(websocket.PongMessage, []byte("pong"))
 			if err != nil {
-				glog.Errorf("Write Error: %v, NotificationId: %s", err, notificationID)
+				glog.Errorf("%s, Write Error: %v", notificationID, err)
 				defer cleanupConnection(notificationID, conn)
 
 			}
@@ -118,7 +120,7 @@ func sendNotificationHandle(w http.ResponseWriter, r *http.Request) {
 	notificationID := strings.Split(r.URL.Path, "/")[2]
 
 	if _, ok := notificationMap[notificationID]; ok {
-		glog.Infof("Posting notification for %s", notificationID)
+		glog.Infof("%s, Posting notification", notificationID)
 		defer r.Body.Close()
 		readBuffer, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -127,16 +129,16 @@ func sendNotificationHandle(w http.ResponseWriter, r *http.Request) {
 		}
 		for _, connection := range notificationMap[notificationID] {
 			s := string(readBuffer)
-			glog.Infof("%v", s)
+			glog.Infof("%s:\n%v", notificationID, s)
 			err = connection.WriteMessage(websocket.TextMessage, readBuffer)
 			if err != nil {
 				// Remove connection
-				glog.Errorf("connection %p is not alive", connection)
+				glog.Errorf("%s, connection %p is not alive", notificationID, connection)
 				defer cleanupConnection(notificationID, connection)
 			}
 		}
 	} else {
-		glog.Errorf("notificationID %s not found", notificationID)
+		glog.Errorf("%s, notificationID not found", notificationID)
 		http.NotFound(w, r)
 	}
 
