@@ -55,7 +55,7 @@ func remove(s []*websocket.Conn, i int) []*websocket.Conn {
 func cleanupConnection(notificationID string, conn *websocket.Conn) {
 	for index, element := range notificationMap[notificationID] {
 		if element == conn {
-			glog.Infof("%s, Removing notification", notificationID)
+			log.Printf("%s, Removing notification", notificationID)
 			notificationMap[notificationID] = remove(notificationMap[notificationID], index)
 			return
 		}
@@ -64,7 +64,7 @@ func cleanupConnection(notificationID string, conn *websocket.Conn) {
 
 func waitForNotificationHandle(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
-		glog.Errorf("Method not allowed")
+		log.Printf("Method not allowed")
 		http.Error(w, "Method not allowed", 405)
 		return
 	}
@@ -75,7 +75,7 @@ func waitForNotificationHandle(w http.ResponseWriter, r *http.Request) {
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		glog.Errorf("%v", err)
+		log.Printf("%v", err)
 		return
 	}
 	defer conn.Close()
@@ -88,21 +88,21 @@ func waitForNotificationHandle(w http.ResponseWriter, r *http.Request) {
 	for {
 		msgType, _, err := conn.ReadMessage()
 		if err != nil {
-			glog.Errorf("%s, read Error: %v", notificationID, err)
+			log.Printf("%s, read Error: %v", notificationID, err)
 			defer cleanupConnection(notificationID, conn)
 			break
 		}
 
 		switch msgType {
 		case websocket.CloseMessage:
-			glog.Errorf("%s, Connection closed", notificationID)
+			log.Printf("%s, Connection closed", notificationID)
 			defer cleanupConnection(notificationID, conn)
 			break
 		case websocket.PingMessage:
-			glog.Infof("%s, Ping", notificationID)
+			log.Printf("%s, Ping", notificationID)
 			err = conn.WriteMessage(websocket.PongMessage, []byte("pong"))
 			if err != nil {
-				glog.Errorf("%s, Write Error: %v", notificationID, err)
+				log.Printf("%s, Write Error: %v", notificationID, err)
 				defer cleanupConnection(notificationID, conn)
 
 			}
@@ -112,7 +112,7 @@ func waitForNotificationHandle(w http.ResponseWriter, r *http.Request) {
 
 func sendNotificationHandle(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
-		glog.Errorf("Method not allowed. returning 405")
+		log.Printf("Method not allowed. returning 405")
 		http.Error(w, "Method not allowed", 405)
 		return
 	}
@@ -120,25 +120,25 @@ func sendNotificationHandle(w http.ResponseWriter, r *http.Request) {
 	notificationID := strings.Split(r.URL.Path, "/")[2]
 
 	if _, ok := notificationMap[notificationID]; ok {
-		glog.Infof("%s, Posting notification", notificationID)
+		log.Printf("%s, Posting notification", notificationID)
 		defer r.Body.Close()
 		readBuffer, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			glog.Errorf("%v", err)
+			log.Printf("%v", err)
 			return
 		}
 		for _, connection := range notificationMap[notificationID] {
 			s := string(readBuffer)
-			glog.Infof("%s:\n%v", notificationID, s)
+			log.Printf("%s:\n%v", notificationID, s)
 			err = connection.WriteMessage(websocket.TextMessage, readBuffer)
 			if err != nil {
 				// Remove connection
-				glog.Errorf("%s, connection %p is not alive", notificationID, connection)
+				log.Printf("%s, connection %p is not alive", notificationID, connection)
 				defer cleanupConnection(notificationID, connection)
 			}
 		}
 	} else {
-		glog.Errorf("%s, notificationID not found", notificationID)
+		log.Printf("%s, notificationID not found", notificationID)
 		http.NotFound(w, r)
 	}
 
