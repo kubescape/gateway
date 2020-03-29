@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/url"
 	"regexp"
 	"strings"
 
@@ -152,57 +151,58 @@ func sendNotification(notificationID string, notification []byte) error {
 	return nil
 
 }
-func setNotificationHandle() error {
 
-	// load configuration file
-	// configURL := ""
-	scheme := ""
-	host := ""
-	path := ""
-	// notificationIDs := ""
-	u := url.URL{Scheme: scheme, Host: host, Path: path, ForceQuery: false}
+// func setNotificationHandle() error {
 
-	// Websocket ping pong
-	for {
-		conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
-		// notificationMap[notificationID] = append(notificationMap[notificationID], conn)
-		if err != nil {
-			log.Printf("Error connecting to postman. url: %s\nMessage %#v", u.String(), err)
-		}
-		defer conn.Close()
+// 	// load configuration file
+// 	// configURL := ""
+// 	scheme := ""
+// 	host := ""
+// 	path := ""
+// 	// notificationIDs := ""
+// 	u := url.URL{Scheme: scheme, Host: host, Path: path, ForceQuery: false}
 
-		// Websocket receive message
-		msgType, notification, err := conn.ReadMessage()
-		if err != nil {
-			// log.Printf("%s, read Error: %v", notificationID, err)
-			// defer cleanupConnection(notificationID, conn)
-			continue
-		}
+// 	// Websocket ping pong
+// 	for {
+// 		conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+// 		// notificationMap[notificationID] = append(notificationMap[notificationID], conn)
+// 		if err != nil {
+// 			log.Printf("Error connecting to postman. url: %s\nMessage %#v", u.String(), err)
+// 		}
+// 		defer conn.Close()
 
-		switch msgType {
-		case websocket.CloseMessage:
-			// log.Printf("%s, Connection closed", notificationID)
-			// defer cleanupConnection(notificationID, conn)
-		case websocket.PingMessage:
-			log.Printf("%s, Ping", host)
-			err = conn.WriteMessage(websocket.PongMessage, []byte("pong"))
-			if err != nil {
-				log.Printf("%s, Write Error: %v", host, err)
-				// defer cleanupConnection(notificationID, conn)
-			}
-		case websocket.TextMessage:
-			// get notificationID from message
-			notificationID := ""
+// 		// Websocket receive message
+// 		msgType, notification, err := conn.ReadMessage()
+// 		if err != nil {
+// 			// log.Printf("%s, read Error: %v", notificationID, err)
+// 			// defer cleanupConnection(notificationID, conn)
+// 			continue
+// 		}
 
-			// send message
-			sendNotification(notificationID, notification)
+// 		switch msgType {
+// 		case websocket.CloseMessage:
+// 			// log.Printf("%s, Connection closed", notificationID)
+// 			// defer cleanupConnection(notificationID, conn)
+// 		case websocket.PingMessage:
+// 			log.Printf("%s, Ping", host)
+// 			err = conn.WriteMessage(websocket.PongMessage, []byte("pong"))
+// 			if err != nil {
+// 				log.Printf("%s, Write Error: %v", host, err)
+// 				// defer cleanupConnection(notificationID, conn)
+// 			}
+// 		case websocket.TextMessage:
+// 			// get notificationID from message
+// 			notificationID := ""
 
-		case websocket.BinaryMessage:
-			break
-		}
-	}
+// 			// send message
+// 			sendNotification(notificationID, notification)
 
-}
+// 		case websocket.BinaryMessage:
+// 			break
+// 		}
+// 	}
+
+// }
 func main() {
 	flag.Parse()
 
@@ -233,9 +233,9 @@ func main() {
 		log.Fatal(http.ListenAndServe(":8002", server8002))
 	}()
 
-	go func() {
-		log.Fatal(setNotificationHandle())
-	}()
+	// go func() {
+	// 	log.Fatal(setNotificationHandle())
+	// }()
 
 	<-finish
 }
