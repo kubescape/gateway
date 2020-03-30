@@ -1,12 +1,15 @@
 package notificationserver
 
 import (
+	"capostman/cautils"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gorilla/websocket"
 
@@ -18,6 +21,12 @@ type NotificationHandle struct {
 	wa                  websocketactions.IWebsocketActions
 	outgoingConnections Connections
 	incomingConnections Connections
+}
+
+// Notification passed between servers
+type Notification struct {
+	Target       map[string]string `json:"target"`
+	Notification interface{}       `json:"notification"`
 }
 
 var (
@@ -35,6 +44,14 @@ func SetupMasterInfo() {
 	}
 	MASTER_HOST = host
 	MASTER_ATTRIBUTES = strings.Split(att, ";")
+	if MASTER_ATTRIBUTES[len(MASTER_ATTRIBUTES)-1] == "" {
+		cautils.RemoveIndexFromStringSlice(&MASTER_ATTRIBUTES, len(MASTER_ATTRIBUTES)-1)
+	}
+}
+
+// IsMaster is server master or edge
+func IsMaster() bool {
+	return (len(MASTER_ATTRIBUTES) > 0 && MASTER_HOST != "")
 }
 
 // AppendServer - create websocket with server
@@ -61,43 +78,55 @@ func (nh *NotificationHandle) AppendServer(w http.ResponseWriter, r *http.Reques
 	// ----------------------------------------------------- 3
 	// register route in master if master configured
 	// create websocket with master
+	go func() {
+		if err := nh.ConnectToMaster(notificationAtt); err != nil {
+			att := cautils.MergeSliceAndMap(MASTER_ATTRIBUTES, notificationAtt)
+			nh.CleanupOutgoingConnection(att)
+		}
+	}()
 
 	// ----------------------------------------------------- 4
-	// Websocket ping pong
-	if err := nh.MaintainWebsocket(conn); err != nil {
+	// Websocket read messages
+	if err := nh.WebsocketReceiveNotification(conn); err != nil {
 		log.Printf("%v, Connection closed", notificationAtt)
-		defer nh.CleanupConnection(notificationAtt)
-		// unregister master?
+		defer nh.CleanupIncomeConnection(notificationAtt)
 	}
 }
 
 // ConnectToMaster -
-func (nh *NotificationHandle) ConnectToMaster(notificationAtt map[string]string) {
-	if MASTER_HOST == "" || len(MASTER_ATTRIBUTES) < 1 {
-		return
+func (nh *NotificationHandle) ConnectToMaster(notificationAtt map[string]string) error {
+	if IsMaster() { // only edge connects to master
+		return nil
 	}
 
-	att := make(map[string]string)
-	for i := range MASTER_ATTRIBUTES {
-		if v, ok := notificationAtt[MASTER_ATTRIBUTES[i]]; ok {
-			att[MASTER_ATTRIBUTES[i]] = v
-		}
-	}
+	att := cautils.MergeSliceAndMap(MASTER_ATTRIBUTES, notificationAtt)
 
 	// if connected
 	if cons := nh.outgoingConnections.Get(att); len(cons) > 0 {
 		// update master on new connection?
-		return
+		return nil
 	}
 
 	// connect to master
-	conn, _, err := websocket.DefaultDialer.Dial(MASTER_HOST, nil)
+	conn, _, err := nh.wa.DefaultDialer(MASTER_HOST, nil)
 	if err != nil {
-
+		return err
 	}
+	defer conn.Close()
 
-	// attach connection
+	// save connection
 	nh.outgoingConnections.Append(att, conn)
+
+	// read/write for keeping websocket connection alive
+	go func() {
+		for {
+			time.Sleep(30 * time.Second)
+			if err = nh.wa.WritePingMessage(conn); err != nil {
+				nh.CleanupOutgoingConnection(att)
+			}
+		}
+	}()
+	return nh.WebsocketReceiveNotification(conn)
 }
 
 // RestAPIReceiveNotification -
@@ -128,28 +157,37 @@ func (nh *NotificationHandle) RestAPIReceiveNotification(w http.ResponseWriter, 
 }
 
 // SendNotification -
-func (nh *NotificationHandle) SendNotification(route map[string]string, notification []byte) error {
+func (nh *NotificationHandle) SendNotification(route map[string]string, notification interface{}) error {
 	connections := nh.incomingConnections.Get(route)
 	if len(connections) < 1 {
 		return fmt.Errorf("%v, notificationID not found", route)
 	}
 	log.Printf("%v, Posting notification", route)
 
+	var k bool
+	var s string
+	var notif []byte
+
+	if notif, k = notification.([]byte); k {
+		// s = string(notif)
+	} else if s, k = notification.(string); k {
+		notif = []byte(s)
+	} else {
+		return fmt.Errorf("unknown type notification. received: %v", notification)
+	}
 	for _, conn := range connections {
-		s := string(notification)
-		log.Printf("%v:\n%v", route, s)
-		err := nh.wa.WriteTextMessage(conn, notification)
+		err := nh.wa.WriteTextMessage(conn, notif)
 		if err != nil {
 			// Remove connection
 			log.Printf("%v, connection %p is not alive", route, conn)
-			defer nh.CleanupConnection(route)
+			defer nh.CleanupIncomeConnection(route)
 		}
 	}
 	return nil
 }
 
-// HandleEdgeServerNotification -
-func (nh *NotificationHandle) HandleEdgeServerNotification() {
+// HandleServerNotification -
+func (nh *NotificationHandle) HandleServerNotification() {
 	// receive message from client
 
 	// handle message
@@ -172,7 +210,7 @@ func (nh *NotificationHandle) AcceptWebsocketConnection(w http.ResponseWriter, r
 		return nil, notificationAtt, err
 	}
 
-	// TODO: test the route is valid
+	// TODO: test the route is valid?
 
 	conn, err := nh.wa.ConnectWebsocket(w, r)
 	if err != nil {
@@ -183,24 +221,41 @@ func (nh *NotificationHandle) AcceptWebsocketConnection(w http.ResponseWriter, r
 
 }
 
-// CleanupConnection -
-func (nh *NotificationHandle) CleanupConnection(notificationAtt map[string]string) {
+// CleanupIncomeConnection -
+func (nh *NotificationHandle) CleanupIncomeConnection(notificationAtt map[string]string) {
+	// remove connection from list
 	nh.incomingConnections.Remove(notificationAtt)
-	// unregister from master?
+
+	// if edge server (than there is a connection with master server)
+	if !IsMaster() {
+		att := cautils.MergeSliceAndMap(MASTER_ATTRIBUTES, notificationAtt)
+		if len(nh.incomingConnections.Get(att)) < 1 { // there are no more clients connected to edge server with this attributes than disconnect from master
+			nh.outgoingConnections.CloseConnections(att)
+		}
+	}
 }
 
-// MaintainWebsocket maintain websocket connection // RestAPIReceiveNotification -
-func (nh *NotificationHandle) MaintainWebsocket(conn *websocket.Conn) error {
+// CleanupOutgoingConnection -
+func (nh *NotificationHandle) CleanupOutgoingConnection(notificationAtt map[string]string) {
+	// remove outgoing connection from list
+	nh.outgoingConnections.Remove(notificationAtt)
+
+	// close all incoming connections relaited to this attributes
+	nh.incomingConnections.CloseConnections(notificationAtt)
+}
+
+// WebsocketReceiveNotification maintain websocket connection // RestAPIReceiveNotification -
+func (nh *NotificationHandle) WebsocketReceiveNotification(conn *websocket.Conn) error {
 	// Websocket ping pong
 	for {
-		msgType, _, err := nh.wa.ReadMessage(conn)
+		msgType, message, err := nh.wa.ReadMessage(conn)
 		if err != nil {
 			return err
 		}
 
 		switch msgType {
 		case websocket.CloseMessage:
-			return err
+			return fmt.Errorf("websocket recieved CloseMessage")
 		case websocket.PingMessage:
 			err = nh.wa.WritePongMessage(conn)
 			if err != nil {
@@ -208,10 +263,14 @@ func (nh *NotificationHandle) MaintainWebsocket(conn *websocket.Conn) error {
 			}
 		case websocket.TextMessage:
 			// get notificationID from message
-			// notificationID := ""
-
+			n := Notification{}
+			if err := json.Unmarshal(message, &n); err != nil {
+				return err
+			}
 			// send message
-			// sendNotification(notificationID, notification)
+			if err := nh.SendNotification(n.Target, n.Notification); err != nil {
+				return err
+			}
 		}
 	}
 }

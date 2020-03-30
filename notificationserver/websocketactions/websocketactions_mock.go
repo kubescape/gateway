@@ -25,7 +25,17 @@ func (wam *WebsocketActionsMock) WritePongMessage(conn *websocket.Conn) error {
 	return nil
 }
 
+// WritePingMessage -
+func (wam *WebsocketActionsMock) WritePingMessage(conn *websocket.Conn) error {
+	return nil
+}
+
 // ReadMessage -
 func (wam *WebsocketActionsMock) ReadMessage(conn *websocket.Conn) (messageType int, p []byte, err error) {
 	return 1, nil, nil
+}
+
+// DefaultDialer -
+func (wam *WebsocketActionsMock) DefaultDialer(host string, requestHeader http.Header) (*websocket.Conn, *http.Response, error) {
+	return &websocket.Conn{}, nil, nil
 }
