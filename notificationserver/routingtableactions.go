@@ -14,15 +14,22 @@ type Connection struct {
 
 // Connections -
 type Connections struct {
-	routingTable []*Connection
+	connections []*Connection
 	// attributes   map[string][]*Connection
-	mutex sync.Mutex
+	mutex *sync.Mutex
+}
+
+// NewConnectionsObj -
+func NewConnectionsObj() *Connections {
+	return &Connections{
+		mutex: &sync.Mutex{},
+	}
 }
 
 // Append -
 func (cs *Connections) Append(attributes map[string]string, conn *websocket.Conn) {
 	cs.mutex.Lock()
-	cs.routingTable = append(cs.routingTable, &Connection{
+	cs.connections = append(cs.connections, &Connection{
 		conn:       conn,
 		attributes: attributes,
 	})
@@ -33,11 +40,11 @@ func (cs *Connections) Append(attributes map[string]string, conn *websocket.Conn
 // Remove from routing table
 func (cs *Connections) Remove(attributes map[string]string) {
 
-	for i := range cs.routingTable {
+	for i := range cs.connections {
 		cs.mutex.Lock()
-		if cs.routingTable[i].AttributesContained(attributes) {
-			cs.routingTable[i] = cs.routingTable[len(cs.routingTable)-1]
-			cs.routingTable = cs.routingTable[:len(cs.routingTable)-1]
+		if cs.connections[i].AttributesContained(attributes) {
+			cs.connections[i] = cs.connections[len(cs.connections)-1]
+			cs.connections = cs.connections[:len(cs.connections)-1]
 		}
 		cs.mutex.Unlock()
 	}
@@ -47,9 +54,9 @@ func (cs *Connections) Remove(attributes map[string]string) {
 func (cs *Connections) Get(attributes map[string]string) []*websocket.Conn {
 	conns := []*websocket.Conn{}
 	// cs.mutex.Lock()
-	for i := range cs.routingTable {
-		if cs.routingTable[i].AttributesContained(attributes) {
-			conns = append(conns, cs.routingTable[i].conn)
+	for i := range cs.connections {
+		if cs.connections[i].AttributesContained(attributes) {
+			conns = append(conns, cs.connections[i].conn)
 		}
 	}
 	// cs.mutex.Unlock()

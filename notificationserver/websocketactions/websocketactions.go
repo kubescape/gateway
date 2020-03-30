@@ -20,6 +20,7 @@ type IWebsocketActions interface {
 	WritePongMessage(conn *websocket.Conn) error
 	WritePingMessage(conn *websocket.Conn) error
 	ReadMessage(conn *websocket.Conn) (messageType int, p []byte, err error)
+	Close(conn *websocket.Conn) error
 	DefaultDialer(host string, requestHeader http.Header) (*websocket.Conn, *http.Response, error)
 }
 
@@ -50,6 +51,11 @@ func (wa *WebsocketActions) WritePingMessage(conn *websocket.Conn) error {
 // ReadMessage -
 func (wa *WebsocketActions) ReadMessage(conn *websocket.Conn) (messageType int, p []byte, err error) {
 	return conn.ReadMessage()
+}
+
+// Close -
+func (wa *WebsocketActions) Close(conn *websocket.Conn) error {
+	return conn.Close()
 }
 
 // DefaultDialer -
