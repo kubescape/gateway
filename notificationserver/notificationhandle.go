@@ -1,7 +1,7 @@
 package notificationserver
 
 import (
-	"capostman/cautils"
+	"canotificationserver/cautils"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -13,7 +13,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"capostman/notificationserver/websocketactions"
+	"canotificationserver/notificationserver/websocketactions"
 )
 
 // NotificationServer -
@@ -51,7 +51,9 @@ func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter
 	}
 	conn, notificationAtt, err := nh.AcceptWebsocketConnection(w, r)
 	if err != nil {
-
+		fmt.Print(err)
+		http.Error(w, err.Error(), 400)
+		return
 	}
 	defer nh.wa.Close(conn)
 	defer r.Body.Close()
@@ -88,9 +90,17 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string)
 		return
 	}
 
+	masterURL := fmt.Sprintf("%s?", MASTER_HOST)
+	amp := ""
+	for i, j := range att {
+		masterURL += amp
+		masterURL += fmt.Sprintf("%s=%s", i, j)
+		amp = "&"
+	}
 	// connect to master
-	conn, _, err := nh.wa.DefaultDialer(MASTER_HOST, nil)
+	conn, _, err := nh.wa.DefaultDialer(masterURL, nil)
 	if err != nil {
+		fmt.Print(err)
 		return
 	}
 	defer nh.wa.Close(conn)

@@ -1,7 +1,7 @@
 package notificationserver
 
 import (
-	"capostman/cautils"
+	"canotificationserver/cautils"
 	"os"
 	"strings"
 )

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"capostman/notificationserver"
+	"canotificationserver/notificationserver"
 	"flag"
 )
 

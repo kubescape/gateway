@@ -44,11 +44,12 @@ class ComponentTest(object):
         self.master = self.run_container(name=self.random_name("master"))  ## ports={8001: 8001, 8002: 8002}
 
     def run_edge_container(self):
-        environment = ["MASTER_HOST={}".format(self.master.name), "MASTER_TARGETS={}".format(";".join(MASTER_TARGETS))]
+        master_host = "ws://{}:8002/waitfornotification".format(self.master.name)
+        environment = ["MASTER_HOST={}".format(master_host), "MASTER_TARGETS={}".format(";".join(MASTER_TARGETS))]
         self.edge = self.run_container(name=self.random_name("edge"), environment=environment)  # ports={8002: 8002}
 
     def run_container(self, name: str, environment: list = [], ports: dict = {}):
-        logger.info("running container: {}".format(name))
+        print("running container: {}".format(name))
         return self.docker_client.containers.run(image=self.image, detach=True, name=name, environment=environment,
                                                  ports=ports, network=self.network.name)
 
@@ -58,12 +59,12 @@ class ComponentTest(object):
         self.client = self.connect_websocket(url)
 
     def receive_notification(self):
-        logger.info("receive_notification")
+        print("receive_notification")
         data = self.client.recv()
         json.loads(data)
 
     def push_notification(self):
-        logger.info("push_notification")
+        print("push_notification")
         master_ip = self.get_container_ip(container=self.master, network=self.network)
         url = "http://{}:8001/sendnotification?{}".format(master_ip, self.convert_dict_to_url(self.notification.target))
         requests.post(url=url, data=self.notification.json())
@@ -164,7 +165,7 @@ if __name__ == "__main__":
     try:
         ct.run()
     except Exception as e:
-        logger.error(e)
+        print(e)
     finally:
-        logger.info("cleaning up")
+        print("cleaning up")
         del ct
