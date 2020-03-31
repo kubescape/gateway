@@ -1,5 +1,7 @@
-FROM scratch
+FROM alpine
+# FROM scratch
 WORKDIR /
-COPY ./dist /.
+# COPY ./dist /.
+COPY ./canotificationserver /
 
-ENTRYPOINT ["/capostman"]
+ENTRYPOINT ["./canotificationserver"]

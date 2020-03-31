@@ -2,6 +2,7 @@ package notificationserver
 
 import (
 	"canotificationserver/cautils"
+	"log"
 	"os"
 	"strings"
 )
@@ -24,6 +25,7 @@ func SetupMasterInfo() {
 	if MASTER_ATTRIBUTES[len(MASTER_ATTRIBUTES)-1] == "" {
 		cautils.RemoveIndexFromStringSlice(&MASTER_ATTRIBUTES, len(MASTER_ATTRIBUTES)-1)
 	}
+	log.Printf("master host: %s, masterattribites: %v", MASTER_HOST, MASTER_ATTRIBUTES)
 }
 
 // IsMaster is server master or edge

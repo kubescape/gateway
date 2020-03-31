@@ -45,13 +45,13 @@ func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter
 	// receive websocket connetction from client
 
 	if r.Method != http.MethodGet {
-		fmt.Printf("Method not allowed")
+		log.Printf("Method not allowed")
 		http.Error(w, "Method not allowed", 405)
 		return
 	}
 	conn, notificationAtt, err := nh.AcceptWebsocketConnection(w, r)
 	if err != nil {
-		fmt.Print(err)
+		log.Print(err)
 		http.Error(w, err.Error(), 400)
 		return
 	}
@@ -100,7 +100,7 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string)
 	// connect to master
 	conn, _, err := nh.wa.DefaultDialer(masterURL, nil)
 	if err != nil {
-		fmt.Print(err)
+		log.Print(err)
 		return
 	}
 	defer nh.wa.Close(conn)
@@ -150,6 +150,7 @@ func (nh *NotificationServer) RestAPINotificationHandler(w http.ResponseWriter, 
 		http.Error(w, err.Error(), 400)
 		return
 	}
+	log.Printf("target: %v", notificationAtt)
 
 	// set message - add route to message
 	if err := nh.SendNotification(notificationAtt, readBuffer); err != nil {
@@ -194,6 +195,7 @@ func (nh *NotificationServer) AcceptWebsocketConnection(w http.ResponseWriter, r
 	if err != nil {
 		return nil, notificationAtt, err
 	}
+	log.Printf("target: %v", notificationAtt)
 
 	// TODO: test if route is valid?
 

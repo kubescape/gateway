@@ -41,12 +41,14 @@ class ComponentTest(object):
         self.network = self.docker_client.networks.create(name=self.random_name("network"), attachable=True)
 
     def run_master_container(self):
-        self.master = self.run_container(name=self.random_name("master"))  ## ports={8001: 8001, 8002: 8002}
+        # self.master = self.run_container(name=self.random_name("master"))  ## ports={8001: 8001, 8002: 8002}
+        self.master = self.run_container(name="master")  ## ports={8001: 8001, 8002: 8002}
 
     def run_edge_container(self):
-        master_host = "ws://{}:8002/waitfornotification".format(self.master.name)
-        environment = ["MASTER_HOST={}".format(master_host), "MASTER_TARGETS={}".format(";".join(MASTER_TARGETS))]
-        self.edge = self.run_container(name=self.random_name("edge"), environment=environment)  # ports={8002: 8002}
+        master_host = "ws://{}:8001/waitfornotification".format(self.master.name)
+        environment = ["MASTER_HOST={}".format(master_host), "MASTER_ATTRIBUTES={}".format(";".join(MASTER_TARGETS))]
+        # self.edge = self.run_container(name=self.random_name("edge"), environment=environment)  # ports={8002: 8002}
+        self.edge = self.run_container(name="edge", environment=environment)  # ports={8002: 8002}
 
     def run_container(self, name: str, environment: list = [], ports: dict = {}):
         print("running container: {}".format(name))
@@ -55,7 +57,7 @@ class ComponentTest(object):
 
     def run_client(self):
         edge_ip = self.get_container_ip(container=self.edge, network=self.network)
-        url = "ws://{}:8002/waitfornotification?{}".format(edge_ip, self.convert_dict_to_url(self.notification.target))
+        url = "ws://{}:8001/waitfornotification?{}".format(edge_ip, self.convert_dict_to_url(self.notification.target))
         self.client = self.connect_websocket(url)
 
     def receive_notification(self):
@@ -66,7 +68,7 @@ class ComponentTest(object):
     def push_notification(self):
         print("push_notification")
         master_ip = self.get_container_ip(container=self.master, network=self.network)
-        url = "http://{}:8001/sendnotification?{}".format(master_ip, self.convert_dict_to_url(self.notification.target))
+        url = "http://{}:8002/sendnotification?{}".format(master_ip, self.convert_dict_to_url(self.notification.target))
         requests.post(url=url, data=self.notification.json())
 
     def __del__(self):
@@ -139,7 +141,7 @@ class ComponentTest(object):
         self.run_network()
         self.run_master_container()
         self.run_edge_container()
-        self.run_client()
+        # self.run_client()
 
         # test
         self.push_notification()  # master
