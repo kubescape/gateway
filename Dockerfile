@@ -1,6 +1,5 @@
 FROM scratch
 WORKDIR /
 COPY ./dist /.
-EXPOSE 8001
-EXPOSE 8002
-ENTRYPOINT ["/ca_postman"]
+
+ENTRYPOINT ["/capostman"]
