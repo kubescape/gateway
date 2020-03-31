@@ -43,6 +43,7 @@ type Notification struct {
 func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter, r *http.Request) {
 	// ----------------------------------------------------- 1
 	// receive websocket connetction from client
+	log.Printf("recevied query: %s", r.URL.RawQuery)
 
 	if r.Method != http.MethodGet {
 		log.Printf("Method not allowed")

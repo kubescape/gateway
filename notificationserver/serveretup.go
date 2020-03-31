@@ -46,36 +46,28 @@ func (h *RegexpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // SetupNotificationServer set up listening http servers
 func (ns *NotificationServer) SetupNotificationServer() {
+
 	finish := make(chan bool)
-	log.Printf("SetupNotificationServer")
+
 	if IsMaster() {
-		log.Printf("1 SetupNotificationHandler")
-		SetupNotificationHandler(ns.RestAPINotificationHandler, MASTER_REST_API, MASTER_REST_PORT)
-		log.Printf("2 SetupNotificationHandler")
-
+		server8002 := http.NewServeMux()
+		var h8002 = new(RegexpHandler)
+		r8002, _ := regexp.Compile(fmt.Sprintf("/%s.*", MASTER_REST_API))
+		h8002.HandleFunc(r8002, ns.RestAPINotificationHandler)
+		server8002.Handle("/", h8002)
+		go func() {
+			log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", MASTER_REST_PORT), server8002))
+		}()
 	}
-	log.Printf("3 SetupNotificationHandler")
-	SetupNotificationHandler(ns.WebsocketNotificationHandler, WEBSOCKET_API, WEBSOCKET_PORT)
-	log.Printf("4 SetupNotificationHandler")
 
-	<-finish
-
-}
-
-// SetupNotificationHandler set up listening websocket/restAPI
-func SetupNotificationHandler(handler notificationHandlerFunc, api string, port int) {
-	log.Printf("listening %d:%s", port, api)
-
-	rCompile, _ := regexp.Compile(fmt.Sprintf("/%s.+", api))
-
-	var regexpHandler = new(RegexpHandler)
-	regexpHandler.HandleFunc(rCompile, handler)
-
-	serverHandler := http.NewServeMux()
-	serverHandler.Handle("/", regexpHandler)
-
+	server8001 := http.NewServeMux()
+	var h8001 = new(RegexpHandler)
+	r8001, _ := regexp.Compile(fmt.Sprintf("/%s.*", WEBSOCKET_API))
+	h8001.HandleFunc(r8001, ns.WebsocketNotificationHandler)
+	server8001.Handle("/", h8001)
 	go func() {
-		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), serverHandler))
+		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", WEBSOCKET_PORT), server8001))
 	}()
 
+	<-finish
 }
