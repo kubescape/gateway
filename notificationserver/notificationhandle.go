@@ -202,8 +202,7 @@ func (nh *NotificationServer) CleanupIncomeConnection(notificationAtt map[string
 	nh.incomingConnections.Remove(notificationAtt)
 
 	// if edge server (than there is a connection with master server)
-	m := IsMaster()
-	if !m {
+	if !IsMaster() {
 		att := cautils.MergeSliceAndMap(MASTER_ATTRIBUTES, notificationAtt)
 		if len(nh.incomingConnections.Get(att)) < 1 { // there are no more clients connected to edge server with this attributes than disconnect from master
 			nh.outgoingConnections.CloseConnections(att)
@@ -233,7 +232,7 @@ func (nh *NotificationServer) WebsocketReceiveNotification(conn *websocket.Conn)
 		case websocket.CloseMessage:
 			return fmt.Errorf("websocket recieved CloseMessage")
 		case websocket.PingMessage:
-			err = nh.wa.WritePongMessage(conn)
+			err := nh.wa.WritePongMessage(conn)
 			if err != nil {
 				return err
 			}
@@ -253,7 +252,7 @@ func (nh *NotificationServer) WebsocketReceiveNotification(conn *websocket.Conn)
 
 // ParseURLPath -
 func (nh *NotificationServer) ParseURLPath(u *url.URL) (map[string]string, error) {
-	// for backward compatibility (capostman)
+	// keeping backward compatibility (capostman)
 	urlPath := strings.Split(u.Path, "/")
 	if len(urlPath) == 3 && urlPath[2] != "" { // capostamn
 		return map[string]string{urlPath[2]: ""}, nil

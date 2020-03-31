@@ -8,9 +8,9 @@ import (
 )
 
 var (
-	MASTER_REST_API  = "restnotificationserver"
+	MASTER_REST_API  = "sendnotification"
 	MASTER_REST_PORT = 8001
-	WEBSOCKET_API    = "wsnotificationserver"
+	WEBSOCKET_API    = "waitfornotification"
 	WEBSOCKET_PORT   = 8002
 )
 

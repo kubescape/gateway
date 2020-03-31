@@ -6,12 +6,16 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var (
-	READ_MESSAGE_TYPE_MOCK = websocket.CloseMessage
-)
-
 // WebsocketActionsMock -
 type WebsocketActionsMock struct {
+	readMessageType int
+	message         map[string]interface{}
+}
+
+func NewWebsocketActionsMock() *WebsocketActionsMock {
+	return &WebsocketActionsMock{
+		readMessageType: websocket.CloseMessage,
+	}
 }
 
 // ConnectWebsocket -
@@ -36,7 +40,7 @@ func (wam *WebsocketActionsMock) WritePingMessage(conn *websocket.Conn) error {
 
 // ReadMessage -
 func (wam *WebsocketActionsMock) ReadMessage(conn *websocket.Conn) (messageType int, p []byte, err error) {
-	return READ_MESSAGE_TYPE_MOCK, nil, nil
+	return wam.readMessageType, nil, nil
 }
 
 // DefaultDialer -
