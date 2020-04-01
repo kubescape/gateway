@@ -98,6 +98,8 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string)
 		masterURL += fmt.Sprintf("%s=%s", i, j)
 		amp = "&"
 	}
+	log.Printf("connecting to websocket: %s", masterURL)
+
 	// connect to master
 	conn, _, err := nh.wa.DefaultDialer(masterURL, nil)
 	if err != nil {
@@ -117,18 +119,20 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string)
 		for {
 			time.Sleep(30 * time.Second)
 			if err := nh.wa.WritePingMessage(conn); err != nil {
+				log.Printf("attributes: %v, error: %s", att, err.Error())
 				cleanup <- true
 			}
 		}
 	}()
 	go func() {
 		if err := nh.WebsocketReceiveNotification(conn); err != nil {
+			log.Printf("attributes: %v, error: %s", att, err.Error())
 			cleanup <- true
 		}
 	}()
 
 	<-cleanup
-
+	log.Printf("disconnect from master with connection attributes: %v", att)
 }
 
 // RestAPINotificationHandler -
@@ -139,22 +143,25 @@ func (nh *NotificationServer) RestAPINotificationHandler(w http.ResponseWriter, 
 		return
 	}
 
-	defer r.Body.Close()
 	readBuffer, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("%v", err)
-		return
-	}
-
-	notificationAtt, err := nh.ParseURLPath(r.URL)
-	if err != nil {
 		http.Error(w, err.Error(), 400)
 		return
 	}
-	log.Printf("target: %v", notificationAtt)
+	defer r.Body.Close()
+
+	notificationAtt, err := nh.ParseURLPath(r.URL)
+	if err != nil {
+		log.Printf("%v", err)
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	log.Printf("sending notification to: %v", notificationAtt)
 
 	// set message - add route to message
 	if err := nh.SendNotification(notificationAtt, readBuffer); err != nil {
+		log.Print(err)
 		http.Error(w, err.Error(), 400)
 	}
 }
@@ -163,7 +170,7 @@ func (nh *NotificationServer) RestAPINotificationHandler(w http.ResponseWriter, 
 func (nh *NotificationServer) SendNotification(route map[string]string, notification interface{}) error {
 	connections := nh.incomingConnections.Get(route)
 	if len(connections) < 1 {
-		return fmt.Errorf("%v, notificationID not found", route)
+		return fmt.Errorf("no connections found for attributes: %v", route)
 	}
 	log.Printf("%v, Posting notification", route)
 
@@ -181,7 +188,6 @@ func (nh *NotificationServer) SendNotification(route map[string]string, notifica
 	for _, conn := range connections {
 		err := nh.wa.WriteTextMessage(conn, notif)
 		if err != nil {
-			// Remove connection
 			log.Printf("%v, connection %p is not alive", route, conn)
 			defer nh.CleanupIncomeConnection(route)
 		}
@@ -240,7 +246,7 @@ func (nh *NotificationServer) WebsocketReceiveNotification(conn *websocket.Conn)
 		if err != nil {
 			return err
 		}
-
+		log.Printf("received msgType: %d. (text=1, close=8, ping=9)", msgType)
 		switch msgType {
 		case websocket.CloseMessage:
 			return fmt.Errorf("websocket recieved CloseMessage")
@@ -250,13 +256,15 @@ func (nh *NotificationServer) WebsocketReceiveNotification(conn *websocket.Conn)
 				return err
 			}
 		case websocket.TextMessage:
+			log.Printf("received message: %s", string(message))
+
 			// get notificationID from message
 			n := Notification{}
 			if err := json.Unmarshal(message, &n); err != nil {
 				return err
 			}
 			// send message
-			if err := nh.SendNotification(n.Target, n.Notification); err != nil {
+			if err := nh.SendNotification(n.Target, message); err != nil {
 				return err
 			}
 		}

@@ -53,22 +53,24 @@ func (cs *Connections) Remove(attributes map[string]string) {
 // Get from routing table
 func (cs *Connections) Get(attributes map[string]string) []*websocket.Conn {
 	conns := []*websocket.Conn{}
-	// cs.mutex.Lock()
+	cs.mutex.Lock()
 	for i := range cs.connections {
 		if cs.connections[i].AttributesContained(attributes) {
 			conns = append(conns, cs.connections[i].conn)
 		}
 	}
-	// cs.mutex.Unlock()
+	cs.mutex.Unlock()
 
 	return conns
 }
 
 // AttributesContained -
 func (c *Connection) AttributesContained(attributes map[string]string) bool {
-	for i, j := range attributes {
-		if v, k := c.attributes[i]; !k || v != j {
-			return false
+	for i, j := range c.attributes {
+		if v, k := attributes[i]; k {
+			if v != j {
+				return false
+			}
 		}
 	}
 	return true

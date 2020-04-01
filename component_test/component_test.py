@@ -2,29 +2,30 @@ import argparse
 import json
 import logging
 import random
-import time
 from builtins import Exception
 
 import docker
 import requests
 from websocket import create_connection
+import operator
 
 logger = logging.getLogger(__name__)
 
 MASTER_TARGETS = ["customer"]
 DEFAULT_ATTRIBUTES = {"customer": "ComponentTest", "cluster": "local"}
+DEFAULT_MESSAGE = "ComponentTest special message"
 
 
 class Notification(object):
     def __init__(self, **kwargs):
-        self.target = kwargs if kwargs else DEFAULT_ATTRIBUTES
-        self.notification = "ComponentTest special message"
+        self.target = kwargs["target"] if "target" in kwargs else DEFAULT_ATTRIBUTES
+        self.notification = kwargs["notification"] if "notification" in kwargs else DEFAULT_MESSAGE
 
-    def __cmp__(self, other):
-        return self.notification == other.notification
-
-    def json(self):
+    def __repr__(self):
         return json.dumps({i: j for i, j in self.__dict__.items() if not callable(getattr(self, i))})
+
+    def __eq__(self, other):
+        return self.__repr__() == other.__repr__()
 
 
 class ComponentTest(object):
@@ -33,53 +34,62 @@ class ComponentTest(object):
         self.image: str = image
         self.network = None
         self.master = None
-        self.edge = None
-        self.client = None
-        self.notification = Notification()
+        self.edge: list = []
+        self.client: list = []
+        self.notification: list = [Notification()]
 
     def run_network(self):
         self.network = self.docker_client.networks.create(name=self.random_name("network"), attachable=True)
 
     def run_master_container(self):
-        # self.master = self.run_container(name=self.random_name("master"))  ## ports={8001: 8001, 8002: 8002}
-        self.master = self.run_container(name="master")  ## ports={8001: 8001, 8002: 8002}
+        self.master = self.run_container(name=self.random_name("master"))
 
     def run_edge_container(self):
         master_host = "ws://{}:8001/waitfornotification".format(self.master.name)
         environment = ["MASTER_HOST={}".format(master_host), "MASTER_ATTRIBUTES={}".format(";".join(MASTER_TARGETS))]
-        # self.edge = self.run_container(name=self.random_name("edge"), environment=environment)  # ports={8002: 8002}
-        self.edge = self.run_container(name="edge", environment=environment)  # ports={8002: 8002}
+        self.edge.append(self.run_container(name=self.random_name("edge"), environment=environment))
 
     def run_container(self, name: str, environment: list = [], ports: dict = {}):
         print("running container: {}".format(name))
         return self.docker_client.containers.run(image=self.image, detach=True, name=name, environment=environment,
                                                  ports=ports, network=self.network.name)
 
-    def run_client(self):
-        edge_ip = self.get_container_ip(container=self.edge, network=self.network)
-        url = "ws://{}:8001/waitfornotification?{}".format(edge_ip, self.convert_dict_to_url(self.notification.target))
-        self.client = self.connect_websocket(url)
+    def run_client(self, edge, notification: Notification):
+        edge_ip = self.get_container_ip(container=edge, network=self.network)
+        url = "ws://{}:8001/waitfornotification?{}".format(edge_ip, self.convert_dict_to_url(notification.target))
+        self.client.append(self.connect_websocket(url))
 
-    def receive_notification(self):
-        print("receive_notification")
-        data = self.client.recv()
-        json.loads(data)
 
-    def push_notification(self):
+    def push_notification(self, notification: Notification):
         print("push_notification")
         master_ip = self.get_container_ip(container=self.master, network=self.network)
-        url = "http://{}:8002/sendnotification?{}".format(master_ip, self.convert_dict_to_url(self.notification.target))
-        requests.post(url=url, data=self.notification.json())
+        url = "http://{}:8002/sendnotification?{}".format(master_ip, self.convert_dict_to_url(notification.target))
+        print("post. url: {}, data: {}".format(url, repr(notification)))
+        r = requests.post(url=url, data=repr(notification))
+        assert r.status_code == 200, "error in posting notification, status code: {}, message: {}".format(r.status_code,
+                                                                                                          r.text)
+        print("post successfully")
 
     def __del__(self):
-        if self.client:
-            self.close_websocket(self.client)
-        if self.edge:
-            self.remove_container(self.edge)
+        for i in self.client:
+            self.close_websocket(i)
+        for i in self.edge:
+            self.remove_container(i)
         if self.master:
             self.remove_container(self.master)
         if self.network:
             self.remove_network(self.network)
+
+    @staticmethod
+    def test_received_notification(notf1, notf2, op=operator.eq):
+        print("testing received notification")
+        assert op(notf1, notf2), "the notifications are not the same"
+
+    @staticmethod
+    def receive_notification(client):
+        print("receive_notification")
+        data = client.recv()
+        return Notification(**json.loads(data))
 
     @staticmethod
     def connect_websocket(url):
@@ -141,13 +151,12 @@ class ComponentTest(object):
         self.run_network()
         self.run_master_container()
         self.run_edge_container()
-        # self.run_client()
+        self.run_client(self.edge[0], self.notification[0])
 
         # test
-        self.push_notification()  # master
-        self.receive_notification()  # client
-        # self.test_received_notification
-        time.sleep(10)
+        self.push_notification(self.notification[0])  # master
+        received = self.receive_notification(self.client[0])  # client
+        self.test_received_notification(received, self.notification[0])
 
 
 def input_parser():
