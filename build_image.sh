@@ -13,9 +13,9 @@ if [[ ! -z "${JOB_NAME}" ]]; then
     pwd
     ls
     go get ./... 
-    go get gopkg.in/mgo.v2
     go get github.com/tebeka/go2xunit
 fi
+go get gopkg.in/mgo.v2
 echo "GOPATH= "$GOPATH
 CC=$($(which musl-gcc) go build -o dist/$PROJECT_NAME --ldflags '-w -linkmode external -extldflags "-static"' *.go)
 CC=$?
