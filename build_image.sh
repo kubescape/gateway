@@ -13,6 +13,7 @@ if [[ ! -z "${JOB_NAME}" ]]; then
     pwd
     ls
     go get ./... 
+    go get gopkg.in/mgo.v2
     go get github.com/tebeka/go2xunit
 fi
 echo "GOPATH= "$GOPATH
