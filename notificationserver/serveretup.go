@@ -63,7 +63,7 @@ func (ns *NotificationServer) SetupNotificationServer() {
 
 	server8001 := http.NewServeMux()
 	var h8001 = new(RegexpHandler)
-	r8001, _ := regexp.Compile(fmt.Sprintf("/v1/%s.*", VERSION, WEBSOCKET_API))
+	r8001, _ := regexp.Compile(fmt.Sprintf("/%s/%s.*", VERSION, WEBSOCKET_API))
 	h8001.HandleFunc(r8001, ns.WebsocketNotificationHandler)
 	server8001.Handle("/", h8001)
 	go func() {
