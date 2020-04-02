@@ -8,6 +8,7 @@ import (
 )
 
 var (
+	VERSION          = "v1"
 	MASTER_REST_API  = "sendnotification"
 	MASTER_REST_PORT = 8002
 	WEBSOCKET_API    = "waitfornotification"
@@ -52,7 +53,7 @@ func (ns *NotificationServer) SetupNotificationServer() {
 	if IsMaster() {
 		server8002 := http.NewServeMux()
 		var h8002 = new(RegexpHandler)
-		r8002, _ := regexp.Compile(fmt.Sprintf("/%s.*", MASTER_REST_API))
+		r8002, _ := regexp.Compile(fmt.Sprintf("/%s/%s.*", VERSION, MASTER_REST_API))
 		h8002.HandleFunc(r8002, ns.RestAPINotificationHandler)
 		server8002.Handle("/", h8002)
 		go func() {
@@ -62,7 +63,7 @@ func (ns *NotificationServer) SetupNotificationServer() {
 
 	server8001 := http.NewServeMux()
 	var h8001 = new(RegexpHandler)
-	r8001, _ := regexp.Compile(fmt.Sprintf("/%s.*", WEBSOCKET_API))
+	r8001, _ := regexp.Compile(fmt.Sprintf("/v1/%s.*", VERSION, WEBSOCKET_API))
 	h8001.HandleFunc(r8001, ns.WebsocketNotificationHandler)
 	server8001.Handle("/", h8001)
 	go func() {
