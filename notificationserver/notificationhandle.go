@@ -57,7 +57,6 @@ func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter
 		return
 	}
 	defer nh.wa.Close(conn)
-	defer r.Body.Close()
 
 	// ----------------------------------------------------- 2
 	// append new route
@@ -224,7 +223,7 @@ func (nh *NotificationServer) CleanupIncomeConnection(notificationAtt map[string
 	if !IsMaster() {
 		att := cautils.MergeSliceAndMap(MASTER_ATTRIBUTES, notificationAtt)
 		if len(nh.incomingConnections.Get(att)) < 1 { // there are no more clients connected to edge server with this attributes than disconnect from master
-			nh.outgoingConnections.CloseConnections(att)
+			nh.outgoingConnections.CloseConnections(nh.wa, att)
 		}
 	}
 }
@@ -235,7 +234,7 @@ func (nh *NotificationServer) CleanupOutgoingConnection(notificationAtt map[stri
 	nh.outgoingConnections.Remove(notificationAtt)
 
 	// close all incoming connections relaited to this attributes
-	nh.incomingConnections.CloseConnections(notificationAtt)
+	nh.incomingConnections.CloseConnections(nh.wa, notificationAtt)
 }
 
 // WebsocketReceiveNotification maintain websocket connection // RestAPIReceiveNotification -

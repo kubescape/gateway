@@ -4,6 +4,8 @@ import (
 	"sync"
 
 	"github.com/gorilla/websocket"
+
+	"canotificationserver/notificationserver/websocketactions"
 )
 
 // Connection -
@@ -77,7 +79,7 @@ func (c *Connection) AttributesContained(attributes map[string]string) bool {
 }
 
 // CloseConnections close all connections of set of attributes
-func (cs *Connections) CloseConnections(attributes map[string]string) {
+func (cs *Connections) CloseConnections(wa websocketactions.IWebsocketActions, attributes map[string]string) {
 	conns := cs.Get(attributes)
 	for i := range conns {
 		defer func() {
@@ -86,7 +88,7 @@ func (cs *Connections) CloseConnections(attributes map[string]string) {
 			}
 		}()
 		cs.mutex.Lock()
-		conns[i].Close()
+		wa.Close(conns[i])
 		cs.mutex.Unlock()
 	}
 }
