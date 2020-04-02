@@ -11,7 +11,7 @@ if [[ ! -z "${JOB_NAME}" ]]; then
     cd $GOPATH/src/$PROJECT_NAME
     echo "pwd: "
     pwd
-    lsa
+    ls
     go get ./... 
     go get github.com/tebeka/go2xunit
 fi
