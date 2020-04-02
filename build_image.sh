@@ -27,7 +27,7 @@ rm -rf *_tests_go.txt
 for path in ./*; do
     [ -d "${path}" ] || continue # if not a directory, skip    
     dirname="$(basename "${path}")"
-    if [[ $dirname == *"jenkinstools"* ]] || [[ $dirname == *"dist"* ]] || [[ $dirname == "src" ]] || [[ $dirname == "pkg" ]] || [[ $dirname == "bin" ]]; then
+    if [[ $dirname == *"jenkinstools"* ]] || [[ $dirname == *"dist"* ]] || [[ $dirname == "src" ]] || [[ $dirname == "pkg" ]] || [[ $dirname == "bin" ]] || [[ $dirname == *"component_test"* ]]; then
         continue
     fi
     echo testing "${dirname}"
@@ -42,7 +42,3 @@ else
     echo "GOLANG Failed tests: $TESTS_FAILED"
     exit 1
 fi
-
-cd component_test
-./run_tests.sh
-
