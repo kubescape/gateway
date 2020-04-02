@@ -9,7 +9,7 @@ export IMAGE_TAG="test"
 passed=$(python3 component_test.py --image $IMAGE_NAME:$IMAGE_TAG| grep "TEST PASSED")
 
 if [ ! -z "$passed" ]; then
-    echo "<--------------- COMPENENT Test Tests PASSED ---------------------->"
+    echo "<--------------- COMPENENT Tests PASSED ---------------------->"
 else
-    echo "<--------------- COMPENENT Test Tests FAILED ---------------------->"
+    echo "<--------------- COMPENENT Tests FAILED ---------------------->"
 fi
