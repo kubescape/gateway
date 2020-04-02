@@ -19,7 +19,10 @@ TESTS_FAILED=$(find -type f -name "*.txt" -exec grep -l 'FAIL' {} +)
 if [ -z "${TESTS_FAILED}" ]; then 
     echo "<---------------GOLANG Tests passed:---------------------->"
     echo $TESTS_FAILED
-    exit 1
 else
     echo "GOLANG Failed tests: $TESTS_FAILED"
 fi
+
+cd component_test
+./run_test.sh
+exit 1

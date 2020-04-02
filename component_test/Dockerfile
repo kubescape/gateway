@@ -1,6 +1,5 @@
 FROM scratch
 WORKDIR /
-COPY ./dist /.
-# COPY ./canotificationserver /
+COPY ./canotificationserver /
 
 ENTRYPOINT ["./canotificationserver"]

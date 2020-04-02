@@ -46,7 +46,8 @@ class ComponentTest(object):
 
     def run_edge_container(self):
         master_host = "ws://{}:8001/waitfornotification".format(self.master.name)
-        environment = ["MASTER_HOST={}".format(master_host), "MASTER_ATTRIBUTES={}".format(";".join(MASTER_TARGETS))]
+        environment = ["MASTER_NOTIFICATION_SERVER_HOST={}".format(master_host),
+                       "MASTER_NOTIFICATION_SERVER_ATTRIBUTES={}".format(";".join(MASTER_TARGETS))]
         self.edge.append(self.run_container(name=self.random_name("edge"), environment=environment))
 
     def run_container(self, name: str, environment: list = [], ports: dict = {}):
@@ -169,13 +170,18 @@ def input_parser():
 
 if __name__ == "__main__":
     args = input_parser()
-    # logger.setLevel(logging.DEBUG)
 
     ct = ComponentTest(image=args.image)
     try:
         ct.run()
+        code = 0
+        print("TEST PASSED")
     except Exception as e:
         print(e)
+        code = 1
+        print("TEST FAILED")
     finally:
         print("cleaning up")
         del ct
+
+    exit(code)
