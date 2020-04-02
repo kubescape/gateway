@@ -5,6 +5,7 @@ import operator
 import random
 from builtins import Exception
 
+import bson
 import docker
 import requests
 from websocket import create_connection
@@ -12,6 +13,8 @@ from websocket import create_connection
 logger = logging.getLogger(__name__)
 
 MASTER_TARGETS = ["customer"]
+MASTER_TARGETS_ENV = "MASTER_NOTIFICATION_SERVER_HOST"
+MASTER_ATTRIBUTES_ENV = "MASTER_NOTIFICATION_SERVER_ATTRIBUTES"
 DEFAULT_ATTRIBUTES = {"customer": "ComponentTest", "cluster": "local"}
 DEFAULT_MESSAGE = "ComponentTest special message"
 
@@ -21,11 +24,20 @@ class Notification(object):
         self.target = kwargs["target"] if "target" in kwargs else DEFAULT_ATTRIBUTES
         self.notification = kwargs["notification"] if "notification" in kwargs else DEFAULT_MESSAGE
 
+    def __bytes__(self):
+        return bson.dumps({i: j for i, j in self.__dict__.items() if not callable(getattr(self, i))})
+
     def __repr__(self):
         return json.dumps({i: j for i, j in self.__dict__.items() if not callable(getattr(self, i))})
 
     def __eq__(self, other):
         return self.__repr__() == other.__repr__()
+
+    def json(self):
+        return repr(self)
+
+    def bson(self):
+        return bytes(self)
 
 
 class ComponentTest(object):
@@ -64,8 +76,8 @@ class ComponentTest(object):
         print("push_notification")
         master_ip = self.get_container_ip(container=self.master, network=self.network)
         url = "http://{}:8002/sendnotification?{}".format(master_ip, self.convert_dict_to_url(notification.target))
-        print("post. url: {}, data: {}".format(url, repr(notification)))
-        r = requests.post(url=url, data=repr(notification))
+        print("post. url: {}, data: {}".format(url, notification.json()))
+        r = requests.post(url=url, data=notification.bson())
         assert r.status_code == 200, "error in posting notification, status code: {}, message: {}".format(r.status_code,
                                                                                                           r.text)
         print("post successfully")
@@ -87,9 +99,9 @@ class ComponentTest(object):
 
     @staticmethod
     def receive_notification(client):
-        print("receive_notification")
+        print("receive notification")
         data = client.recv()
-        return Notification(**json.loads(data))
+        return Notification(**bson.loads(bytes(data, 'ascii')))
 
     @staticmethod
     def connect_websocket(url):

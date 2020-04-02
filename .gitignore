@@ -1,3 +1,4 @@
 *.idea*
 workspace.xml
 *launch.json*
+*python_env*

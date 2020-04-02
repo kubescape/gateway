@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"gopkg.in/mgo.v2/bson"
 
 	"canotificationserver/notificationserver/websocketactions"
 )
@@ -150,42 +151,33 @@ func (nh *NotificationServer) RestAPINotificationHandler(w http.ResponseWriter, 
 	}
 	defer r.Body.Close()
 
-	notificationAtt, err := nh.ParseURLPath(r.URL)
+	// get notificationID from message
+	notificationAtt, err := nh.UnmarshalMessage(readBuffer)
 	if err != nil {
 		log.Printf("%v", err)
 		http.Error(w, err.Error(), 400)
 		return
 	}
-	log.Printf("sending notification to: %v", notificationAtt)
+
+	log.Printf("sending notification to: %v", notificationAtt.Target)
 
 	// set message - add route to message
-	if err := nh.SendNotification(notificationAtt, readBuffer); err != nil {
+	if err := nh.SendNotification(notificationAtt.Target, readBuffer); err != nil {
 		log.Print(err)
 		http.Error(w, err.Error(), 400)
 	}
 }
 
 // SendNotification -
-func (nh *NotificationServer) SendNotification(route map[string]string, notification interface{}) error {
+func (nh *NotificationServer) SendNotification(route map[string]string, notification []byte) error {
 	connections := nh.incomingConnections.Get(route)
 	if len(connections) < 1 {
 		return fmt.Errorf("no connections found for attributes: %v", route)
 	}
-	log.Printf("%v, Posting notification", route)
+	log.Printf("Posting notification to %v", route)
 
-	var k bool
-	var s string
-	var notif []byte
-
-	if notif, k = notification.([]byte); k {
-		// s = string(notif)
-	} else if s, k = notification.(string); k {
-		notif = []byte(s)
-	} else {
-		return fmt.Errorf("unknown type notification. received: %v", notification)
-	}
 	for _, conn := range connections {
-		err := nh.wa.WriteTextMessage(conn, notif)
+		err := nh.wa.WriteTextMessage(conn, notification)
 		if err != nil {
 			log.Printf("%v, connection %p is not alive", route, conn)
 			defer nh.CleanupIncomeConnection(route)
@@ -258,10 +250,11 @@ func (nh *NotificationServer) WebsocketReceiveNotification(conn *websocket.Conn)
 			log.Printf("received message: %s", string(message))
 
 			// get notificationID from message
-			n := Notification{}
-			if err := json.Unmarshal(message, &n); err != nil {
+			n, err := nh.UnmarshalMessage(message)
+			if err != nil {
 				return err
 			}
+
 			// send message
 			if err := nh.SendNotification(n.Target, message); err != nil {
 				return err
@@ -289,4 +282,17 @@ func (nh *NotificationServer) ParseURLPath(u *url.URL) (map[string]string, error
 		return att, fmt.Errorf("no attributes received")
 	}
 	return att, nil
+}
+
+// UnmarshalMessage -
+func (nh *NotificationServer) UnmarshalMessage(message []byte) (*Notification, error) {
+	n := &Notification{}
+	var err error
+	if err = json.Unmarshal(message, n); err == nil {
+		return n, nil
+	}
+	if err = bson.Unmarshal(message, n); err == nil {
+		return n, nil
+	}
+	return n, err
 }
