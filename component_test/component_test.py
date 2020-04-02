@@ -67,20 +67,24 @@ class ComponentTest(object):
         return self.docker_client.containers.run(image=self.image, detach=True, name=name, environment=environment,
                                                  ports=ports, network=self.network.name)
 
-    def run_client(self, edge, notification: Notification):
+    def get_container_edge_url(self, edge, notification: Notification):
         edge_ip = self.get_container_ip(container=edge, network=self.network)
-        url = "ws://{}:8001/waitfornotification?{}".format(edge_ip, self.convert_dict_to_url(notification.target))
-        self.client.append(self.connect_websocket(url))
+        return "ws://{}:8001/waitfornotification?{}".format(edge_ip, self.convert_dict_to_url(notification.target))
 
-    def push_notification(self, notification: Notification):
-        print("push_notification")
+    def get_container_master_url(self):
         master_ip = self.get_container_ip(container=self.master, network=self.network)
-        url = "http://{}:8002/sendnotification?{}".format(master_ip, self.convert_dict_to_url(notification.target))
-        print("post. url: {}, data: {}".format(url, notification.json()))
-        r = requests.post(url=url, data=notification.bson())
-        assert r.status_code == 200, "error in posting notification, status code: {}, message: {}".format(r.status_code,
-                                                                                                          r.text)
-        print("post successfully")
+        return "http://{}:8002/sendnotification".format(master_ip)
+
+    def get_backend_edge_url(self, notification: Notification):
+        edge_url = "ens.eudev2.cyberarmorsoft.com"
+        return "wss://{}/waitfornotification?{}".format(edge_url, self.convert_dict_to_url(notification.target))
+
+    @staticmethod
+    def get_backend_master_url():
+        return "https://mns.eudev2.cyberarmorsoft.com/sendnotification"
+
+    def run_client(self, url):
+        self.client.append(self.connect_websocket(url))
 
     def __del__(self):
         for i in self.client:
@@ -91,6 +95,14 @@ class ComponentTest(object):
             self.remove_container(self.master)
         if self.network:
             self.remove_network(self.network)
+
+    @staticmethod
+    def push_notification(url: str, notification: Notification):
+        print("post notification, url: {}, data: {}".format(url, notification.json()))
+        r = requests.post(url=url, data=notification.bson())
+        assert r.status_code == 200, "error in posting notification, status code: {}, message: {}".format(r.status_code,
+                                                                                                          r.text)
+        print("post successfully")
 
     @staticmethod
     def test_received_notification(notf1, notf2, op=operator.eq):
@@ -161,12 +173,16 @@ class ComponentTest(object):
         """
         # setup
         self.run_network()
-        self.run_master_container()
-        self.run_edge_container()
-        self.run_client(self.edge[0], self.notification[0])
+        # self.run_master_container()
+        # self.run_edge_container()
+        # edge_url = self.get_container_edge_url(self.edge[0], self.notification[0])
+        # master_url = self.get_master_connection()
+        edge_url =self.get_backend_edge_url(self.notification[0])
+        master_url =self.get_backend_master_url()
+        self.run_client(url=edge_url)
 
         # test
-        self.push_notification(self.notification[0])  # master
+        self.push_notification(master_url, self.notification[0])  # master
         received = self.receive_notification(self.client[0])  # client
         self.test_received_notification(received, self.notification[0])
 
