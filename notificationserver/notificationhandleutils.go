@@ -15,8 +15,8 @@ var (
 )
 
 func SetupMasterInfo() {
-	att, k1 := os.LookupEnv("MASTER_ATTRIBUTES")
-	host, k0 := os.LookupEnv("MASTER_HOST")
+	att, k1 := os.LookupEnv("MASTER_NOTIFICATION_SERVER_ATTRIBUTES")
+	host, k0 := os.LookupEnv("MASTER_NOTIFICATION_SERVER_HOST")
 	if !k0 || !k1 {
 		return
 	}

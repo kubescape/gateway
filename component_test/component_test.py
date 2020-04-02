@@ -1,13 +1,13 @@
 import argparse
 import json
 import logging
+import operator
 import random
 from builtins import Exception
 
 import docker
 import requests
 from websocket import create_connection
-import operator
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,6 @@ class ComponentTest(object):
         edge_ip = self.get_container_ip(container=edge, network=self.network)
         url = "ws://{}:8001/waitfornotification?{}".format(edge_ip, self.convert_dict_to_url(notification.target))
         self.client.append(self.connect_websocket(url))
-
 
     def push_notification(self, notification: Notification):
         print("push_notification")

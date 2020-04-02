@@ -22,6 +22,7 @@ func NewNotificationServerMasterMock() *NotificationServer {
 func NewNotificationServerEdgeMock() *NotificationServer {
 	MASTER_HOST = "https://blabla"
 	MASTER_ATTRIBUTES = []string{"customer"}
+
 	return &NotificationServer{
 		wa:                  &websocketactions.WebsocketActionsMock{},
 		outgoingConnections: *NewConnectionsObj(),
@@ -37,11 +38,12 @@ func HTTPRequestMock() *http.Request {
 	return r
 }
 func TestWebsocketNotificationHandlerMaster(t *testing.T) {
-	ns := NewNotificationServerMasterMock()
-	r := HTTPRequestMock()
-	ns.WebsocketNotificationHandler(nil, r)
+	nsm := NewNotificationServerMasterMock()
 
-	if len(ns.outgoingConnections.connections) > 0 || len(ns.incomingConnections.connections) > 0 {
+	r := HTTPRequestMock()
+	nsm.WebsocketNotificationHandler(nil, r)
+
+	if len(nsm.outgoingConnections.connections) > 0 || len(nsm.incomingConnections.connections) > 0 {
 		t.Errorf("connections where not removed")
 	}
 }

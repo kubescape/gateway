@@ -18,7 +18,7 @@ func ConnectionsMock() *Connections {
 		connections: []*Connection{
 			ConnectionMock(),
 		},
-		mutex: &sync.Mutex{},
+		mutex: &sync.RWMutex{},
 	}
 }
 func TestGet(t *testing.T) {

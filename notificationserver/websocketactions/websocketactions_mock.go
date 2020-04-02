@@ -8,15 +8,10 @@ import (
 
 // WebsocketActionsMock -
 type WebsocketActionsMock struct {
-	readMessageType int
-	message         map[string]interface{}
 }
 
-func NewWebsocketActionsMock() *WebsocketActionsMock {
-	return &WebsocketActionsMock{
-		readMessageType: websocket.CloseMessage,
-	}
-}
+// ReadMessageTypeMock mock message
+var ReadMessageTypeMock = websocket.CloseMessage
 
 // ConnectWebsocket -
 func (wam *WebsocketActionsMock) ConnectWebsocket(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {
@@ -40,7 +35,7 @@ func (wam *WebsocketActionsMock) WritePingMessage(conn *websocket.Conn) error {
 
 // ReadMessage -
 func (wam *WebsocketActionsMock) ReadMessage(conn *websocket.Conn) (messageType int, p []byte, err error) {
-	return wam.readMessageType, nil, nil
+	return ReadMessageTypeMock, nil, nil
 }
 
 // DefaultDialer -
