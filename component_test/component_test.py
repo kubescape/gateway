@@ -172,8 +172,8 @@ class ComponentTest(object):
         :return:
         """
         # setup
-        edge_url =self.get_backend_edge_url(self.notification[0])
-        master_url =self.get_backend_master_url()
+        edge_url = self.get_backend_edge_url(self.notification[0])
+        master_url = self.get_backend_master_url()
         self.run_client(url=edge_url)
 
         # test
@@ -208,6 +208,7 @@ class ComponentTest(object):
         received = self.receive_notification(self.client[0])  # client
         self.test_received_notification(received, self.notification[0])
 
+
 def input_parser():
     parser = argparse.ArgumentParser("Run notification server component test")
 
@@ -222,7 +223,7 @@ if __name__ == "__main__":
 
     ct = ComponentTest(image=args.image)
     try:
-        ct.run_local()
+        ct.run()
         code = 0
         print("TEST PASSED")
     except Exception as e:

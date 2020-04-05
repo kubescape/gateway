@@ -25,6 +25,3 @@ else
     echo "GOLANG Failed tests: $TESTS_FAILED"
 fi
 
-cd component_test
-./run_tests.sh
-exit 1

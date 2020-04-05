@@ -64,7 +64,7 @@ func TestParseURLQuery(t *testing.T) {
 
 func TestParseURLPath(t *testing.T) {
 	ns := NewNotificationServerEdgeMock()
-	att, err := ns.ParseURLPath(&url.URL{Path: "/notify/my-id"})
+	att, err := ns.ParseURLPath(&url.URL{Path: "/v1/notify/my-id"})
 	if err != nil {
 		t.Error(err)
 	}
