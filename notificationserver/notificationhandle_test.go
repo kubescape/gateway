@@ -33,7 +33,7 @@ func NewNotificationServerEdgeMock() *NotificationServer {
 func HTTPRequestMock() *http.Request {
 	r := &http.Request{}
 	r.Method = http.MethodGet
-	r.URL = &url.URL{Scheme: "https://", Host: "blabla", Path: "somepath", RawQuery: "customer=test&cluster=kube"}
+	r.URL = &url.URL{Scheme: "https://", Host: "blabla", Path: "v1/somepath", RawQuery: "customer=test&cluster=kube"}
 	r.Body = &io.PipeReader{}
 	return r
 }
