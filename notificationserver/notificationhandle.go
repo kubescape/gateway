@@ -267,8 +267,8 @@ func (nh *NotificationServer) WebsocketReceiveNotification(conn *websocket.Conn)
 func (nh *NotificationServer) ParseURLPath(u *url.URL) (map[string]string, error) {
 	// keeping backward compatibility (capostman)
 	urlPath := strings.Split(u.Path, "/")
-	if len(urlPath) == 3 && urlPath[2] != "" { // capostamn
-		return map[string]string{urlPath[2]: ""}, nil
+	if len(urlPath) == 4 && urlPath[3] != "" { // capostamn
+		return map[string]string{urlPath[3]: ""}, nil
 	}
 
 	att := make(map[string]string)

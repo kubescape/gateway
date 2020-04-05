@@ -57,7 +57,7 @@ class ComponentTest(object):
         self.master = self.run_container(name=self.random_name("master"))
 
     def run_edge_container(self):
-        master_host = "ws://{}:8001/waitfornotification".format(self.master.name)
+        master_host = "ws://{}:8001/v1/waitfornotification".format(self.master.name)
         environment = ["MASTER_NOTIFICATION_SERVER_HOST={}".format(master_host),
                        "MASTER_NOTIFICATION_SERVER_ATTRIBUTES={}".format(";".join(MASTER_TARGETS))]
         self.edge.append(self.run_container(name=self.random_name("edge"), environment=environment))
@@ -69,19 +69,19 @@ class ComponentTest(object):
 
     def get_container_edge_url(self, edge, notification: Notification):
         edge_ip = self.get_container_ip(container=edge, network=self.network)
-        return "ws://{}:8001/waitfornotification?{}".format(edge_ip, self.convert_dict_to_url(notification.target))
+        return "ws://{}:8001/v1/waitfornotification?{}".format(edge_ip, self.convert_dict_to_url(notification.target))
 
     def get_container_master_url(self):
         master_ip = self.get_container_ip(container=self.master, network=self.network)
-        return "http://{}:8002/sendnotification".format(master_ip)
+        return "http://{}:8002/v1/sendnotification".format(master_ip)
 
     def get_backend_edge_url(self, notification: Notification):
         edge_url = "ens.eudev2.cyberarmorsoft.com"
-        return "wss://{}/waitfornotification?{}".format(edge_url, self.convert_dict_to_url(notification.target))
+        return "wss://{}/v1/waitfornotification?{}".format(edge_url, self.convert_dict_to_url(notification.target))
 
     @staticmethod
     def get_backend_master_url():
-        return "https://mns.eudev2.cyberarmorsoft.com/sendnotification"
+        return "https://mns.eudev2.cyberarmorsoft.com/v1/sendnotification"
 
     def run_client(self, url):
         self.client.append(self.connect_websocket(url))
@@ -172,11 +172,6 @@ class ComponentTest(object):
         :return:
         """
         # setup
-        self.run_network()
-        # self.run_master_container()
-        # self.run_edge_container()
-        # edge_url = self.get_container_edge_url(self.edge[0], self.notification[0])
-        # master_url = self.get_master_connection()
         edge_url =self.get_backend_edge_url(self.notification[0])
         master_url =self.get_backend_master_url()
         self.run_client(url=edge_url)
@@ -186,6 +181,32 @@ class ComponentTest(object):
         received = self.receive_notification(self.client[0])  # client
         self.test_received_notification(received, self.notification[0])
 
+    def run_local(self):
+        """
+        setup:
+        1. run network
+        2. run master
+        3. run edge
+        4. run client (websocket to edge)
+
+        test:
+        1. send notification
+        2. receive notification from websocket
+
+        :return:
+        """
+        # setup
+        self.run_network()
+        self.run_master_container()
+        self.run_edge_container()
+        edge_url = self.get_container_edge_url(self.edge[0], self.notification[0])
+        master_url = self.get_container_master_url()
+        self.run_client(url=edge_url)
+
+        # test
+        self.push_notification(master_url, self.notification[0])  # master
+        received = self.receive_notification(self.client[0])  # client
+        self.test_received_notification(received, self.notification[0])
 
 def input_parser():
     parser = argparse.ArgumentParser("Run notification server component test")
@@ -201,7 +222,7 @@ if __name__ == "__main__":
 
     ct = ComponentTest(image=args.image)
     try:
-        ct.run()
+        ct.run_local()
         code = 0
         print("TEST PASSED")
     except Exception as e:
