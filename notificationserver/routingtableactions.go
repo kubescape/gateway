@@ -5,7 +5,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"canotificationserver/notificationserver/websocketactions"
+	"capostman/notificationserver/websocketactions"
 )
 
 // Connection -

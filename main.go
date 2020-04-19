@@ -1,7 +1,7 @@
 package main
 
 import (
-	"canotificationserver/notificationserver"
+	"capostman/notificationserver"
 	"fmt"
 )
 

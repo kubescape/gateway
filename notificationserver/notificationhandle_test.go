@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"testing"
 
-	"canotificationserver/notificationserver/websocketactions"
+	"capostman/notificationserver/websocketactions"
 )
 
 // NewNotificationServerMasterMock -
