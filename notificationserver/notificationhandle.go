@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -19,18 +20,20 @@ import (
 
 // NotificationServer -
 type NotificationServer struct {
-	wa                  websocketactions.IWebsocketActions
-	outgoingConnections Connections
-	incomingConnections Connections
+	wa                       websocketactions.IWebsocketActions
+	outgoingConnections      Connections
+	incomingConnections      Connections
+	outgoingConnectionsMutex *sync.Mutex
 }
 
 // NewNotificationServer -
 func NewNotificationServer() *NotificationServer {
 	SetupMasterInfo()
 	return &NotificationServer{
-		wa:                  &websocketactions.WebsocketActions{},
-		outgoingConnections: *NewConnectionsObj(),
-		incomingConnections: *NewConnectionsObj(),
+		wa:                       &websocketactions.WebsocketActions{},
+		outgoingConnections:      *NewConnectionsObj(),
+		incomingConnections:      *NewConnectionsObj(),
+		outgoingConnectionsMutex: &sync.Mutex{},
 	}
 }
 
@@ -109,7 +112,15 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string)
 	defer nh.wa.Close(conn)
 
 	// save connection
-	nh.outgoingConnections.Append(att, conn)
+	nh.outgoingConnectionsMutex.Lock()
+	if len(nh.outgoingConnections.Get(att)) == 0 {
+		nh.outgoingConnections.Append(att, conn)
+		nh.outgoingConnectionsMutex.Unlock()
+	} else {
+		nh.outgoingConnectionsMutex.Unlock()
+		return
+	}
+
 	defer nh.CleanupOutgoingConnection(att)
 
 	cleanup := make(chan bool)
