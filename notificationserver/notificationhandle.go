@@ -256,7 +256,7 @@ func (nh *NotificationServer) WebsocketReceiveNotification(conn *websocket.Conn)
 		case websocket.PingMessage:
 			err := nh.wa.WritePongMessage(conn)
 			if err != nil {
-				return err
+				return fmt.Errorf("In WebsocketReceiveNotification WritePongMessage error: %v", err)
 			}
 		case websocket.TextMessage:
 			log.Printf("In WebsocketReceiveNotification received message: %s", string(message))
@@ -264,12 +264,14 @@ func (nh *NotificationServer) WebsocketReceiveNotification(conn *websocket.Conn)
 			// get notificationID from message
 			n, err := nh.UnmarshalMessage(message)
 			if err != nil {
-				return err
+				return fmt.Errorf("In WebsocketReceiveNotification UnmarshalMessage error: %v", err)
+
 			}
 
 			// send message
 			if err := nh.SendNotification(n.Target, message); err != nil {
-				return err
+				return fmt.Errorf("In WebsocketReceiveNotification SendNotification error: %v", err)
+
 			}
 		}
 	}
