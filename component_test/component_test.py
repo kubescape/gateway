@@ -223,7 +223,7 @@ if __name__ == "__main__":
 
     ct = ComponentTest(image=args.image)
     try:
-        ct.run()
+        ct.run_local()
         code = 0
         print("TEST PASSED")
     except Exception as e:
