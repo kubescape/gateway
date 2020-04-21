@@ -31,37 +31,35 @@ func NewConnectionsObj() *Connections {
 // Append -
 func (cs *Connections) Append(attributes map[string]string, conn *websocket.Conn) {
 	cs.mutex.Lock()
+	defer cs.mutex.Unlock()
 	cs.connections = append(cs.connections, &Connection{
 		conn:       conn,
 		attributes: attributes,
 	})
-	cs.mutex.Unlock()
-
 }
 
 // Remove from routing table
 func (cs *Connections) Remove(attributes map[string]string) {
-
 	cs.mutex.Lock()
+	defer cs.mutex.Unlock()
 	for i := range cs.connections {
 		if cs.connections[i].AttributesContained(attributes) {
 			cs.connections[i] = cs.connections[len(cs.connections)-1]
 			cs.connections = cs.connections[:len(cs.connections)-1]
 		}
 	}
-	cs.mutex.Unlock()
 }
 
 // Get from routing table
 func (cs *Connections) Get(attributes map[string]string) []*websocket.Conn {
 	conns := []*websocket.Conn{}
 	cs.mutex.RLocker().Lock()
+	defer cs.mutex.RLocker().Unlock()
 	for i := range cs.connections {
 		if cs.connections[i].AttributesContained(attributes) {
 			conns = append(conns, cs.connections[i].conn)
 		}
 	}
-	cs.mutex.RLocker().Unlock()
 
 	return conns
 }
