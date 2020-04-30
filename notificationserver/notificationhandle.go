@@ -44,13 +44,13 @@ type Notification struct {
 func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter, r *http.Request) {
 	// ----------------------------------------------------- 1
 	// receive websocket connetction from client
-	log.Printf("recevied query: %s", r.URL.RawQuery)
-
 	if r.Method != http.MethodGet {
 		log.Printf("Method not allowed")
 		http.Error(w, "Method not allowed", 405)
 		return
 	}
+
+	log.Printf("accepting websocket connection. url query: %s", r.URL.RawQuery)
 	conn, notificationAtt, err := nh.AcceptWebsocketConnection(w, r)
 	if err != nil {
 		log.Print(err)
@@ -98,7 +98,7 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string)
 		masterURL += fmt.Sprintf("%s=%s", i, j)
 		amp = "&"
 	}
-	log.Printf("connecting to websocket: %s", masterURL)
+	log.Printf("connecting to master: %s", masterURL)
 
 	// connect to master
 	conn, _, err := nh.wa.DefaultDialer(masterURL, nil)
@@ -158,8 +158,7 @@ func (nh *NotificationServer) RestAPINotificationHandler(w http.ResponseWriter, 
 		http.Error(w, err.Error(), 400)
 		return
 	}
-
-	log.Printf("sending notification to: %v", notificationAtt.Target)
+	log.Printf("REST API received message, attributes: %v", notificationAtt.Target)
 
 	// set message - add route to message
 	if err := nh.SendNotification(notificationAtt.Target, readBuffer); err != nil {
@@ -170,11 +169,12 @@ func (nh *NotificationServer) RestAPINotificationHandler(w http.ResponseWriter, 
 
 // SendNotification -
 func (nh *NotificationServer) SendNotification(route map[string]string, notification []byte) error {
+	log.Printf("sending notification to: %v, message: %s", route, string(notification))
+
 	connections := nh.incomingConnections.Get(route)
 	if len(connections) < 1 {
 		return fmt.Errorf("no connections found for attributes: %v", route)
 	}
-	log.Printf("Posting notification to %v", route)
 
 	for _, conn := range connections {
 		err := nh.wa.WriteTextMessage(conn, notification)
@@ -193,7 +193,7 @@ func (nh *NotificationServer) AcceptWebsocketConnection(w http.ResponseWriter, r
 	if err != nil {
 		return nil, notificationAtt, err
 	}
-	log.Printf("target: %v", notificationAtt)
+	log.Printf("accepting websocket connection. attributes: %v", notificationAtt)
 
 	// TODO: test if route is valid?
 
