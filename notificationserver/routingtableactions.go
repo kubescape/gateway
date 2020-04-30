@@ -1,6 +1,7 @@
 package notificationserver
 
 import (
+	"log"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -31,37 +32,44 @@ func NewConnectionsObj() *Connections {
 // Append -
 func (cs *Connections) Append(attributes map[string]string, conn *websocket.Conn) {
 	cs.mutex.Lock()
+	defer cs.mutex.Unlock()
 	cs.connections = append(cs.connections, &Connection{
 		conn:       conn,
 		attributes: attributes,
 	})
-	cs.mutex.Unlock()
-
 }
 
 // Remove from routing table
 func (cs *Connections) Remove(attributes map[string]string) {
-
 	cs.mutex.Lock()
-	for i := range cs.connections {
+	defer cs.mutex.Unlock()
+	slcLen := len(cs.connections)
+	for i := 0; i < slcLen; i++ {
 		if cs.connections[i].AttributesContained(attributes) {
-			cs.connections[i] = cs.connections[len(cs.connections)-1]
-			cs.connections = cs.connections[:len(cs.connections)-1]
+			log.Printf("Removing connection from incoming list: %d. attributes: %v", i, attributes)
+			if slcLen < 2 { //i is the only element in the slice so we need to remove this entry from the map
+				cs.connections = make([]*Connection, 0, 10)
+			} else if i == slcLen-1 { // i is the last element in the slice so i+1 is out of range
+				cs.connections = cs.connections[:i]
+			} else {
+				cs.connections = append(cs.connections[:i], cs.connections[i+1:]...)
+			}
+			slcLen--
+			i--
 		}
 	}
-	cs.mutex.Unlock()
 }
 
 // Get from routing table
 func (cs *Connections) Get(attributes map[string]string) []*websocket.Conn {
 	conns := []*websocket.Conn{}
 	cs.mutex.RLocker().Lock()
+	defer cs.mutex.RLocker().Unlock()
 	for i := range cs.connections {
 		if cs.connections[i].AttributesContained(attributes) {
 			conns = append(conns, cs.connections[i].conn)
 		}
 	}
-	cs.mutex.RLocker().Unlock()
 
 	return conns
 }
