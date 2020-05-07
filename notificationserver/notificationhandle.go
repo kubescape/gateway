@@ -121,7 +121,6 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string)
 		log.Printf("In ConnectToMaster, connection wasn't appended")
 		return
 	}
-	log.Printf("In ConnectToMaster, connection was appended")
 	defer nh.CleanupOutgoingConnection(att)
 
 	cleanup := make(chan bool)
@@ -181,14 +180,10 @@ func (nh *NotificationServer) RestAPINotificationHandler(w http.ResponseWriter, 
 
 // SendNotification -
 func (nh *NotificationServer) SendNotification(route map[string]string, notification []byte) error {
-	log.Printf("sending notification to: %v, message: %s", route, string(notification))
 
 	connections := nh.incomingConnections.Get(route)
-	if len(connections) < 1 {
-		return fmt.Errorf("no connections found for attributes: %v", route)
-	}
-
 	for _, conn := range connections {
+		log.Printf("sending notification to: %v, message: %s", route, string(notification))
 		err := nh.wa.WriteTextMessage(conn, notification)
 		if err != nil {
 			log.Printf("In SendNotification %v, connection %p is not alive, error: %v", route, conn, err)
@@ -205,10 +200,6 @@ func (nh *NotificationServer) AcceptWebsocketConnection(w http.ResponseWriter, r
 	if err != nil {
 		return nil, notificationAtt, err
 	}
-
-	log.Printf("In AcceptWebsocketConnection target: %v", notificationAtt)
-
-	// TODO: test if route is valid?
 
 	conn, err := nh.wa.ConnectWebsocket(w, r)
 	if err != nil {
@@ -250,7 +241,7 @@ func (nh *NotificationServer) WebsocketReceiveNotification(conn *websocket.Conn)
 		if err != nil {
 			return err
 		}
-		log.Printf("In WebsocketReceiveNotification received msgType: %d. (text=1, close=8, ping=9)", msgType)
+		// log.Printf("In WebsocketReceiveNotification received msgType: %d. (text=1, close=8, ping=9)", msgType)
 		switch msgType {
 		case websocket.CloseMessage:
 			return fmt.Errorf("In WebsocketReceiveNotification websocket recieved CloseMessage")
