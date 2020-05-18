@@ -2,6 +2,7 @@ package notificationserver
 
 import (
 	"log"
+	"math/rand"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -11,6 +12,7 @@ import (
 
 // Connection -
 type Connection struct {
+	ID         int
 	conn       *websocket.Conn
 	attributes map[string]string
 }
@@ -30,13 +32,16 @@ func NewConnectionsObj() *Connections {
 }
 
 // Append -
-func (cs *Connections) Append(attributes map[string]string, conn *websocket.Conn) {
+func (cs *Connections) Append(attributes map[string]string, conn *websocket.Conn) int {
 	cs.mutex.Lock()
 	defer cs.mutex.Unlock()
+	id := rand.Int()
 	cs.connections = append(cs.connections, &Connection{
+		ID:         id,
 		conn:       conn,
 		attributes: attributes,
 	})
+	return id
 }
 
 // Remove from routing table
@@ -60,14 +65,35 @@ func (cs *Connections) Remove(attributes map[string]string) {
 	}
 }
 
+// RemoveID by id from routing table
+func (cs *Connections) RemoveID(id int) {
+	cs.mutex.Lock()
+	defer cs.mutex.Unlock()
+	slcLen := len(cs.connections)
+	for i := 0; i < slcLen; i++ {
+		if cs.connections[i].ID == id {
+			log.Printf("Removing connection from incoming list. len: %d. attributes: %v, id: %d", i, cs.connections[i].attributes, cs.connections[i].ID)
+			if slcLen < 2 { //i is the only element in the slice so we need to remove this entry from the map
+				cs.connections = make([]*Connection, 0, 10)
+			} else if i == slcLen-1 { // i is the last element in the slice so i+1 is out of range
+				cs.connections = cs.connections[:i]
+			} else {
+				cs.connections = append(cs.connections[:i], cs.connections[i+1:]...)
+			}
+			slcLen--
+			i--
+		}
+	}
+}
+
 // Get from routing table
-func (cs *Connections) Get(attributes map[string]string) []*websocket.Conn {
-	conns := []*websocket.Conn{}
+func (cs *Connections) Get(attributes map[string]string) []*Connection {
+	conns := []*Connection{}
 	cs.mutex.RLocker().Lock()
 	defer cs.mutex.RLocker().Unlock()
 	for i := range cs.connections {
 		if cs.connections[i].AttributesContained(attributes) {
-			conns = append(conns, cs.connections[i].conn)
+			conns = append(conns, cs.connections[i])
 		}
 	}
 
@@ -96,7 +122,7 @@ func (cs *Connections) CloseConnections(wa websocketactions.IWebsocketActions, a
 			}
 		}()
 		cs.mutex.Lock()
-		wa.Close(conns[i])
+		wa.Close(conns[i].conn)
 		cs.mutex.Unlock()
 	}
 }

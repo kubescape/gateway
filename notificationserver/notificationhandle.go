@@ -64,8 +64,8 @@ func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter
 
 	// ----------------------------------------------------- 2
 	// append new route
-	nh.incomingConnections.Append(notificationAtt, conn)
-	defer nh.CleanupIncomeConnection(notificationAtt)
+	id := nh.incomingConnections.Append(notificationAtt, conn)
+	defer nh.CleanupIncomeConnection(id)
 
 	// ----------------------------------------------------- 3
 	// register route in master if master configured
@@ -75,7 +75,7 @@ func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter
 	// ----------------------------------------------------- 4
 	// Websocket read messages
 	if err := nh.WebsocketReceiveNotification(conn); err != nil {
-		log.Printf("WebsocketReceiveNotification returned error %v, attributes: %v Connection closed", err, notificationAtt)
+		log.Printf("In WebsocketNotificationHandler connection closed. attributes: %v, error: %v", notificationAtt, err)
 	}
 
 }
@@ -88,9 +88,13 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string)
 
 	att := cautils.MergeSliceAndMap(MASTER_ATTRIBUTES, notificationAtt)
 
+	nh.outgoingConnectionsMutex.Lock()
+
 	// if connected
 	if cons := nh.outgoingConnections.Get(att); len(cons) > 0 {
+		log.Printf("edge already connected to master, not creating new connection")
 		// update master on new connection?
+		nh.outgoingConnectionsMutex.Unlock()
 		return
 	}
 
@@ -107,20 +111,13 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string)
 	conn, _, err := nh.wa.DefaultDialer(masterURL, nil)
 	if err != nil {
 		log.Printf("In ConnectToMaster: %v", err)
+		nh.outgoingConnectionsMutex.Unlock()
 		return
 	}
 	defer nh.wa.Close(conn)
+	nh.outgoingConnections.Append(att, conn)
+	nh.outgoingConnectionsMutex.Unlock()
 
-	// save connection
-	nh.outgoingConnectionsMutex.Lock()
-	if len(nh.outgoingConnections.Get(att)) == 0 {
-		nh.outgoingConnections.Append(att, conn)
-		nh.outgoingConnectionsMutex.Unlock()
-	} else {
-		nh.outgoingConnectionsMutex.Unlock()
-		log.Printf("In ConnectToMaster, connection wasn't appended")
-		return
-	}
 	defer nh.CleanupOutgoingConnection(att)
 
 	cleanup := make(chan bool)
@@ -183,11 +180,11 @@ func (nh *NotificationServer) SendNotification(route map[string]string, notifica
 
 	connections := nh.incomingConnections.Get(route)
 	for _, conn := range connections {
-		log.Printf("sending notification to: %v, message: %s", route, string(notification))
-		err := nh.wa.WriteTextMessage(conn, notification)
+		log.Printf("sending notification to: %v", route)
+		err := nh.wa.WriteTextMessage(conn.conn, notification)
 		if err != nil {
 			log.Printf("In SendNotification %v, connection %p is not alive, error: %v", route, conn, err)
-			defer nh.CleanupIncomeConnection(route)
+			defer nh.CleanupIncomeConnection(conn.ID)
 		}
 	}
 	return nil
@@ -210,18 +207,26 @@ func (nh *NotificationServer) AcceptWebsocketConnection(w http.ResponseWriter, r
 
 }
 
-// CleanupIncomeConnection -
-func (nh *NotificationServer) CleanupIncomeConnection(notificationAtt map[string]string) {
+// CleanupIncomeConnections - cleanup all connections with matching attributes
+func (nh *NotificationServer) CleanupIncomeConnections(notificationAtt map[string]string) {
 	// remove connection from list
 	nh.incomingConnections.Remove(notificationAtt)
 
-	// if edge server (than there is a connection with master server)
-	if !IsMaster() {
-		att := cautils.MergeSliceAndMap(MASTER_ATTRIBUTES, notificationAtt)
-		if len(nh.incomingConnections.Get(att)) < 1 { // there are no more clients connected to edge server with this attributes than disconnect from master
-			nh.outgoingConnections.CloseConnections(nh.wa, att)
-		}
-	}
+	// TODO- find a way to cleanup connections with master
+	// // if edge server (than there is a connection with master server)
+	// if !IsMaster() {
+	// 	att := cautils.MergeSliceAndMap(MASTER_ATTRIBUTES, notificationAtt)
+	// 	if len(nh.incomingConnections.Get(att)) < 1 { // there are no more clients connected to edge server with this attributes than disconnect from master
+	// 		nh.outgoingConnections.CloseConnections(nh.wa, att)
+	// 	}
+	// }
+}
+
+// CleanupIncomeConnection - cleanup one connection with matching id
+func (nh *NotificationServer) CleanupIncomeConnection(id int) {
+	// remove connection from list
+	nh.incomingConnections.RemoveID(id)
+
 }
 
 // CleanupOutgoingConnection -
