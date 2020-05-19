@@ -53,7 +53,6 @@ func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter
 		return
 	}
 
-	log.Printf("accepting websocket connection. url query: %s", r.URL.RawQuery)
 	conn, notificationAtt, err := nh.AcceptWebsocketConnection(w, r)
 	if err != nil {
 		log.Print(err)
@@ -66,6 +65,8 @@ func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter
 	// append new route
 	id := nh.incomingConnections.Append(notificationAtt, conn)
 	defer nh.CleanupIncomeConnection(id)
+
+	log.Printf("accepting websocket connection. url query: %s, id: %d", r.URL.RawQuery, id)
 
 	// ----------------------------------------------------- 3
 	// register route in master if master configured
@@ -180,10 +181,10 @@ func (nh *NotificationServer) SendNotification(route map[string]string, notifica
 
 	connections := nh.incomingConnections.Get(route)
 	for _, conn := range connections {
-		log.Printf("sending notification to: %v", route)
+		log.Printf("sending notification to: %v, id: %d", route, conn.ID)
 		err := nh.wa.WriteTextMessage(conn.conn, notification)
 		if err != nil {
-			log.Printf("In SendNotification %v, connection %p is not alive, error: %v", route, conn, err)
+			log.Printf("In SendNotification %v, connection %d is not alive, error: %v", route, conn.ID, err)
 			defer nh.CleanupIncomeConnection(conn.ID)
 		}
 	}
@@ -256,19 +257,15 @@ func (nh *NotificationServer) WebsocketReceiveNotification(conn *websocket.Conn)
 				return fmt.Errorf("In WebsocketReceiveNotification WritePongMessage error: %v", err)
 			}
 		case websocket.TextMessage:
-			log.Printf("In WebsocketReceiveNotification received message: %s", string(message))
-
 			// get notificationID from message
 			n, err := nh.UnmarshalMessage(message)
 			if err != nil {
 				return fmt.Errorf("In WebsocketReceiveNotification UnmarshalMessage error: %v", err)
-
 			}
 
 			// send message
 			if err := nh.SendNotification(n.Target, message); err != nil {
 				return fmt.Errorf("In WebsocketReceiveNotification SendNotification error: %v", err)
-
 			}
 		}
 	}

@@ -72,7 +72,7 @@ func (cs *Connections) RemoveID(id int) {
 	slcLen := len(cs.connections)
 	for i := 0; i < slcLen; i++ {
 		if cs.connections[i].ID == id {
-			log.Printf("Removing connection from incoming list. len: %d. attributes: %v, id: %d", i, cs.connections[i].attributes, cs.connections[i].ID)
+			log.Printf("Removing connection from incoming list. index: %d. attributes: %v, id: %d", i, cs.connections[i].attributes, cs.connections[i].ID)
 			if slcLen < 2 { //i is the only element in the slice so we need to remove this entry from the map
 				cs.connections = make([]*Connection, 0, 10)
 			} else if i == slcLen-1 { // i is the last element in the slice so i+1 is out of range
