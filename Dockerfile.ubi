@@ -1,5 +1,10 @@
 FROM registry.access.redhat.com/ubi8/ubi-minimal
 
+LABEL description="CyberArmor operator image - this image is part of the CyberArmor operator deployment and it is not meant to be used alone"
+LABEL name="CyberArmor operator"
+LABEL summary="CyberArmor operator image"
+LABEL vendor="CyberArmor Ltd."
+
 WORKDIR /
 COPY ./dist /.
 
