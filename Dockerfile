@@ -5,5 +5,6 @@ RUN apk add ca-certificates
 
 WORKDIR /
 COPY ./dist /.
+# COPY ./notification-server /
 
-ENTRYPOINT ["./notificationserver"]
+ENTRYPOINT ["./notification-server"]

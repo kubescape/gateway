@@ -1,17 +1,17 @@
 package notificationserver
 
 import (
-	"notificationserver/cautils"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
+	"notification-server/cautils"
 	"strings"
 	"sync"
 	"time"
-	"notificationserver/notificationserver/websocketactions"
+	"notification-server/notificationserver/websocketactions"
 
 	"github.com/gorilla/websocket"
 	"gopkg.in/mgo.v2/bson"

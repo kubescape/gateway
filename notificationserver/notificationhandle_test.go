@@ -4,7 +4,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"notificationserver/notificationserver/websocketactions"
+	"notification-server/notificationserver/websocketactions"
 	"testing"
 )
 

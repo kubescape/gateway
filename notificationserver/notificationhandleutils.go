@@ -1,8 +1,8 @@
 package notificationserver
 
 import (
-	"notificationserver/cautils"
 	"log"
+	"notification-server/cautils"
 	"os"
 	"strings"
 )

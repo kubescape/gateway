@@ -3,7 +3,7 @@ package notificationserver
 import (
 	"log"
 	"math/rand"
-	"notificationserver/notificationserver/websocketactions"
+	"notification-server/notificationserver/websocketactions"
 	"sync"
 
 	"github.com/gorilla/websocket"

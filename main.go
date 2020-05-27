@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"notificationserver/notificationserver"
+	"notification-server/notificationserver"
 )
 
 func main() {
