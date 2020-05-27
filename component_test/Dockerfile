@@ -1,5 +1,5 @@
 FROM scratch
 WORKDIR /
-COPY ./canotificationserver /
+COPY ./notification-server /
 
-ENTRYPOINT ["./canotificationserver"]
+ENTRYPOINT ["./notification-server"]

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -ex
 
-export IMAGE_NAME="canotificationserver"
+export IMAGE_NAME="notification-server"
 export IMAGE_TAG="test"
 
 ./build.sh

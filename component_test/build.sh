@@ -2,7 +2,7 @@
 set -x
 
 if [ -z "$IMAGE_NAME"]; then
-    export IMAGE_NAME="canotificationserver"
+    export IMAGE_NAME="notification-server"
 fi
 
 if [ -z "$IMAGE_TAG"]; then
@@ -17,7 +17,7 @@ if [ ! -z $imglist ]; then
 fi
 
 set -e
-CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o canotificationserver ../
+CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o notification-server ../
 docker build --no-cache -t $IMAGE_NAME:$IMAGE_TAG .
 
-rm canotificationserver
+rm notification-server
