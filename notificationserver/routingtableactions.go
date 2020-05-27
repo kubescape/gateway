@@ -3,11 +3,10 @@ package notificationserver
 import (
 	"log"
 	"math/rand"
+	"notificationserver/notificationserver/websocketactions"
 	"sync"
 
 	"github.com/gorilla/websocket"
-
-	"capostman/notificationserver/websocketactions"
 )
 
 // Connection -

@@ -4,9 +4,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"notificationserver/notificationserver/websocketactions"
 	"testing"
-
-	"capostman/notificationserver/websocketactions"
 )
 
 // NewNotificationServerMasterMock -

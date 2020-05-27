@@ -1,8 +1,8 @@
 package main
 
 import (
-	"capostman/notificationserver"
 	"fmt"
+	"notificationserver/notificationserver"
 )
 
 func main() {

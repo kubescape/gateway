@@ -1,7 +1,7 @@
 package notificationserver
 
 import (
-	"capostman/cautils"
+	"notificationserver/cautils"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -11,11 +11,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"notificationserver/notificationserver/websocketactions"
 
 	"github.com/gorilla/websocket"
 	"gopkg.in/mgo.v2/bson"
-
-	"capostman/notificationserver/websocketactions"
 )
 
 // NotificationServer -
