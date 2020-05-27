@@ -17,7 +17,7 @@ if [ ! -z $imglist ]; then
 fi
 
 set -e
-CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o notification-server ../
+CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o notificationserver ../
 docker build --no-cache -t $IMAGE_NAME:$IMAGE_TAG .
 
-rm notification-server
+rm notificationserver

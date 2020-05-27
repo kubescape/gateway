@@ -1,4 +1,4 @@
-package main
+package notificationserver
 
 import (
 	"capostman/notificationserver"

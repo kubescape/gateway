@@ -1,4 +1,4 @@
-module capostman
+module notificationserver
 
 go 1.13
 

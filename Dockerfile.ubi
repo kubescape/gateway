@@ -8,4 +8,4 @@ LABEL vendor="CyberArmor Ltd."
 WORKDIR /
 COPY ./dist /.
 
-ENTRYPOINT ["./notification-server"]
+ENTRYPOINT ["./notificationserver"]
