@@ -50,16 +50,14 @@ func (ns *NotificationServer) SetupNotificationServer() {
 
 	finish := make(chan bool)
 
-	if IsMaster() {
-		server8002 := http.NewServeMux()
-		var h8002 = new(RegexpHandler)
-		r8002, _ := regexp.Compile(fmt.Sprintf("/%s/%s.*", VERSION, MASTER_REST_API))
-		h8002.HandleFunc(r8002, ns.RestAPINotificationHandler)
-		server8002.Handle("/", h8002)
-		go func() {
-			log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", MASTER_REST_PORT), server8002))
-		}()
-	}
+	server8002 := http.NewServeMux()
+	var h8002 = new(RegexpHandler)
+	r8002, _ := regexp.Compile(fmt.Sprintf("/%s/%s.*", VERSION, MASTER_REST_API))
+	h8002.HandleFunc(r8002, ns.RestAPINotificationHandler)
+	server8002.Handle("/", h8002)
+	go func() {
+		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", MASTER_REST_PORT), server8002))
+	}()
 
 	server8001 := http.NewServeMux()
 	var h8001 = new(RegexpHandler)
