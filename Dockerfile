@@ -5,6 +5,8 @@ RUN apk add ca-certificates
 
 WORKDIR /
 COPY ./dist /.
-# COPY ./notification-server /
+
+COPY ./build_number.txt /
+RUN echo $(date -u) > /build_date.txt
 
 ENTRYPOINT ["./notification-server"]

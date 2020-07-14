@@ -267,6 +267,18 @@ func (nh *NotificationServer) WebsocketReceiveNotification(conn *websocket.Conn)
 			if err := nh.SendNotification(n.Target, message); err != nil {
 				return fmt.Errorf("In WebsocketReceiveNotification SendNotification error: %v", err)
 			}
+		case websocket.BinaryMessage:
+			// get notificationID from message
+			n, err := nh.UnmarshalMessage(message)
+			if err != nil {
+				return fmt.Errorf("In WebsocketReceiveNotification UnmarshalMessage error: %v", err)
+			}
+
+			// send message
+			if err := nh.SendNotification(n.Target, message); err != nil {
+				return fmt.Errorf("In WebsocketReceiveNotification SendNotification error: %v", err)
+			}
+
 		}
 	}
 }
