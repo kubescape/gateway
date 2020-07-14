@@ -16,7 +16,7 @@ var upgrader = websocket.Upgrader{
 // IWebsocketActions -
 type IWebsocketActions interface {
 	ConnectWebsocket(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error)
-	WriteTextMessage(conn *websocket.Conn, readBuffer []byte) error
+	WriteBinaryMessage(conn *websocket.Conn, readBuffer []byte) error
 	WritePongMessage(conn *websocket.Conn) error
 	WritePingMessage(conn *websocket.Conn) error
 	ReadMessage(conn *websocket.Conn) (messageType int, p []byte, err error)
@@ -34,8 +34,8 @@ func (wa *WebsocketActions) ConnectWebsocket(w http.ResponseWriter, r *http.Requ
 }
 
 // WriteTextMessage -
-func (wa *WebsocketActions) WriteTextMessage(conn *websocket.Conn, readBuffer []byte) error {
-	return conn.WriteMessage(websocket.TextMessage, readBuffer)
+func (wa *WebsocketActions) WriteBinaryMessage(conn *websocket.Conn, readBuffer []byte) error {
+	return conn.WriteMessage(websocket.BinaryMessage, readBuffer)
 }
 
 // WritePongMessage -

@@ -11,10 +11,11 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"notification-server/notificationserver/websocketactions"
 
 	"github.com/gorilla/websocket"
 	"gopkg.in/mgo.v2/bson"
+
+	"notification-server/notificationserver/websocketactions"
 )
 
 // NotificationServer -
@@ -181,7 +182,7 @@ func (nh *NotificationServer) SendNotification(route map[string]string, notifica
 	connections := nh.incomingConnections.Get(route)
 	for _, conn := range connections {
 		log.Printf("sending notification to: %v, id: %d", route, conn.ID)
-		err := nh.wa.WriteTextMessage(conn.conn, notification)
+		err := nh.wa.WriteBinaryMessage(conn.conn, notification)
 		if err != nil {
 			log.Printf("In SendNotification %v, connection %d is not alive, error: %v", route, conn.ID, err)
 			defer nh.CleanupIncomeConnection(conn.ID)

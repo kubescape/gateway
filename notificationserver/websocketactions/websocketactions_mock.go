@@ -18,8 +18,8 @@ func (wam *WebsocketActionsMock) ConnectWebsocket(w http.ResponseWriter, r *http
 	return &websocket.Conn{}, nil
 }
 
-// WriteTextMessage -
-func (wam *WebsocketActionsMock) WriteTextMessage(conn *websocket.Conn, readBuffer []byte) error {
+// WriteBinaryMessage -
+func (wam *WebsocketActionsMock) WriteBinaryMessage(conn *websocket.Conn, readBuffer []byte) error {
 	return nil
 }
 
