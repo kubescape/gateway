@@ -76,7 +76,7 @@ func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter
 	// ----------------------------------------------------- 4
 	// Websocket read messages
 	if err := nh.WebsocketReceiveNotification(conn); err != nil {
-		log.Printf("In WebsocketNotificationHandler connection closed. attributes: %v, error: %v", notificationAtt, err)
+		// log.Printf("In WebsocketNotificationHandler connection closed. attributes: %v, error: %v", notificationAtt, err)
 	}
 
 }
@@ -141,7 +141,7 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string)
 	}()
 
 	<-cleanup
-	log.Printf("disconnect from master with connection attributes: %v", att)
+	log.Printf("disconnected from master with connection attributes: %v", att)
 }
 
 // RestAPINotificationHandler -
