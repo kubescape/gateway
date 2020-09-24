@@ -171,11 +171,13 @@ func (nh *NotificationServer) RestAPINotificationHandler(w http.ResponseWriter, 
 	if notificationAtt.Target == nil || len(notificationAtt.Target) == 0 {
 		log.Printf("In RestAPINotificationHandler received empty notificationAtt.Target")
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 	// set message - add route to message
 	if err := nh.SendNotification(notificationAtt.Target, readBuffer); err != nil {
 		log.Printf("In RestAPINotificationHandler SendNotification %v, target: %v", err, notificationAtt.Target)
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 }
 
