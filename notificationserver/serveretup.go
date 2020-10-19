@@ -51,6 +51,9 @@ func (ns *NotificationServer) SetupNotificationServer() {
 	if port, ok := os.LookupEnv("CA_WEBSOCKET_PORT"); ok {
 		WEBSOCKET_PORT = port
 	}
+	if port, ok := os.LookupEnv("CA_REST_API_PORT"); ok {
+		MASTER_REST_PORT = port
+	}
 	finish := make(chan bool)
 
 	server8002 := http.NewServeMux()
