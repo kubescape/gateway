@@ -4,15 +4,16 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"regexp"
 )
 
 var (
 	VERSION          = "v1"
 	MASTER_REST_API  = "sendnotification"
-	MASTER_REST_PORT = 8002
+	MASTER_REST_PORT = "8002"
 	WEBSOCKET_API    = "waitfornotification"
-	WEBSOCKET_PORT   = 8001
+	WEBSOCKET_PORT   = "8001"
 )
 
 type notificationHandlerFunc func(http.ResponseWriter, *http.Request)
@@ -47,7 +48,9 @@ func (h *RegexpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // SetupNotificationServer set up listening http servers
 func (ns *NotificationServer) SetupNotificationServer() {
-
+	if port, ok := os.LookupEnv("CA_WEBSOCKET_PORT"); ok {
+		WEBSOCKET_PORT = port
+	}
 	finish := make(chan bool)
 
 	server8002 := http.NewServeMux()
@@ -56,7 +59,7 @@ func (ns *NotificationServer) SetupNotificationServer() {
 	h8002.HandleFunc(r8002, ns.RestAPINotificationHandler)
 	server8002.Handle("/", h8002)
 	go func() {
-		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", MASTER_REST_PORT), server8002))
+		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", MASTER_REST_PORT), server8002))
 	}()
 
 	server8001 := http.NewServeMux()
@@ -65,7 +68,7 @@ func (ns *NotificationServer) SetupNotificationServer() {
 	h8001.HandleFunc(r8001, ns.WebsocketNotificationHandler)
 	server8001.Handle("/", h8001)
 	go func() {
-		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", WEBSOCKET_PORT), server8001))
+		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", WEBSOCKET_PORT), server8001))
 	}()
 
 	<-finish
