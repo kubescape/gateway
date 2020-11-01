@@ -1,0 +1,13 @@
+@startuml
+== Initialization ==
+client -> edge: register client id
+note right: client id is a dict(map) of keys\nand values: {key0=val0, key1=val1}
+edge -> master: register client/part-of client id
+note right: register to master using the id specified in the environment variable
+== Repetition ==
+...
+backendAPI --> master: message
+note left: format:\n{\n\t"target": {\n\t\tkey0=val0, key1=val1\n\t},\n\t"notification": <notification data>\n}
+master --> edge: message
+edge --> client: message
+@enduml
