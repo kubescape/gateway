@@ -174,18 +174,24 @@ func (nh *NotificationServer) RestAPINotificationHandler(w http.ResponseWriter, 
 		return
 	}
 	// set message - add route to message
-	if err := nh.SendNotification(notificationAtt.Target, readBuffer); err != nil {
+	ids, err := nh.SendNotification(notificationAtt.Target, readBuffer)
+	if err != nil {
 		log.Printf("In RestAPINotificationHandler SendNotification %v, target: %v", err, notificationAtt.Target)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	byteIDs, _ := json.Marshal(ids)
+	w.Write(byteIDs)
+
 }
 
 // SendNotification -
-func (nh *NotificationServer) SendNotification(route map[string]string, notification []byte) error {
+func (nh *NotificationServer) SendNotification(route map[string]string, notification []byte) ([]int, error) {
 
+	ids := []int{}
 	connections := nh.incomingConnections.Get(route)
 	for _, conn := range connections {
+		ids = append(ids, conn.ID)
 		log.Printf("sending notification to: %v, id: %d", route, conn.ID)
 		err := nh.wa.WriteBinaryMessage(conn.conn, notification)
 		if err != nil {
@@ -193,7 +199,7 @@ func (nh *NotificationServer) SendNotification(route map[string]string, notifica
 			defer nh.CleanupIncomeConnection(conn.ID)
 		}
 	}
-	return nil
+	return ids, nil
 }
 
 // AcceptWebsocketConnection -
@@ -271,7 +277,7 @@ func (nh *NotificationServer) WebsocketReceiveNotification(conn *websocket.Conn)
 				return fmt.Errorf("In WebsocketReceiveNotification received empty notification.Target")
 			}
 			// send message
-			if err := nh.SendNotification(n.Target, message); err != nil {
+			if _, err := nh.SendNotification(n.Target, message); err != nil {
 				return fmt.Errorf("In WebsocketReceiveNotification SendNotification error: %v", err)
 			}
 		case websocket.BinaryMessage:
@@ -284,7 +290,7 @@ func (nh *NotificationServer) WebsocketReceiveNotification(conn *websocket.Conn)
 				return fmt.Errorf("In WebsocketReceiveNotification received empty notification.Target")
 			}
 			// send message
-			if err := nh.SendNotification(n.Target, message); err != nil {
+			if _, err := nh.SendNotification(n.Target, message); err != nil {
 				return fmt.Errorf("In WebsocketReceiveNotification SendNotification error: %v", err)
 			}
 
