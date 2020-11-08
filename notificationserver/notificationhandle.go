@@ -191,6 +191,11 @@ func (nh *NotificationServer) SendNotification(route map[string]string, notifica
 	ids := []int{}
 	connections := nh.incomingConnections.Get(route)
 	for _, conn := range connections {
+		defer func() {
+			if err := recover(); err != nil {
+				log.Printf("recover SendNotification %v, connection %d is not alive, error: %v", route, conn.ID, err)
+			}
+		}()
 		ids = append(ids, conn.ID)
 		log.Printf("sending notification to: %v, id: %d", route, conn.ID)
 		err := nh.wa.WriteBinaryMessage(conn.conn, notification)
