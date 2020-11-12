@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -x
 
-if [ -z "$IMAGE_NAME"]; then
+if [ -z "$IMAGE_NAME" ]; then
     export IMAGE_NAME="notification-server"
 fi
 
-if [ -z "$IMAGE_TAG"]; then
+if [ -z "$IMAGE_TAG" ]; then
     export IMAGE_TAG="test"
 fi
 
@@ -17,7 +17,8 @@ if [ ! -z $imglist ]; then
 fi
 
 set -e
-CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o notificationserver ../
+CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o notification-server ../
 docker build --no-cache -t $IMAGE_NAME:$IMAGE_TAG .
+#docker push $IMAGE_NAME:$IMAGE_TAG
 
-rm notificationserver
+rm notification-server

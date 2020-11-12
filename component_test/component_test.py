@@ -25,7 +25,7 @@ class Notification(object):
         self.notification = kwargs["notification"] if "notification" in kwargs else DEFAULT_MESSAGE
 
     def __bytes__(self):
-        return bson.dumps({i: j for i, j in self.__dict__.items() if not callable(getattr(self, i))})
+        return bson.BSON.encode({i: j for i, j in self.__dict__.items() if not callable(getattr(self, i))})
 
     def __repr__(self):
         return json.dumps({i: j for i, j in self.__dict__.items() if not callable(getattr(self, i))})
@@ -106,14 +106,13 @@ class ComponentTest(object):
 
     @staticmethod
     def test_received_notification(notf1, notf2, op=operator.eq):
-        print("testing received notification")
         assert op(notf1, notf2), "the notifications are not the same"
 
     @staticmethod
     def receive_notification(client):
         print("receive notification")
         data = client.recv()
-        return Notification(**bson.loads(bytes(data, 'ascii')))
+        return Notification(**bson.BSON(data).decode())
 
     @staticmethod
     def connect_websocket(url):
@@ -156,30 +155,30 @@ class ComponentTest(object):
     @staticmethod
     def get_container_ip(container, network):
         return ComponentTest.inspect(container=container)['NetworkSettings']['Networks'][network.name]['IPAddress']
-
-    def run(self):
-        """
-        setup:
-        1. run network
-        2. run master
-        3. run edge
-        4. run client (websocket to edge)
-
-        test:
-        1. send notification
-        2. receive notification from websocket
-
-        :return:
-        """
-        # setup
-        edge_url = self.get_backend_edge_url(self.notification[0])
-        master_url = self.get_backend_master_url()
-        self.run_client(url=edge_url)
-
-        # test
-        self.push_notification(master_url, self.notification[0])  # master
-        received = self.receive_notification(self.client[0])  # client
-        self.test_received_notification(received, self.notification[0])
+    #
+    # def run(self):
+    #     """
+    #     setup:
+    #     1. run network
+    #     2. run master
+    #     3. run edge
+    #     4. run client (websocket to edge)
+    #
+    #     test:
+    #     1. send notification
+    #     2. receive notification from websocket
+    #
+    #     :return:
+    #     """
+    #     # setup
+    #     edge_url = self.get_backend_edge_url(self.notification[0])
+    #     master_url = self.get_backend_master_url()
+    #     self.run_client(url=edge_url)
+    #
+    #     # test
+    #     self.push_notification(master_url, self.notification[0])  # master
+    #     received = self.receive_notification(self.client[0])  # client
+    #     self.test_received_notification(received, self.notification[0])
 
     def run_local(self):
         """
@@ -206,6 +205,7 @@ class ComponentTest(object):
         # test
         self.push_notification(master_url, self.notification[0])  # master
         received = self.receive_notification(self.client[0])  # client
+        print(f"received notification: {received}")
         self.test_received_notification(received, self.notification[0])
 
 
