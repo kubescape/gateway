@@ -189,20 +189,34 @@ func (nh *NotificationServer) RestAPINotificationHandler(w http.ResponseWriter, 
 func (nh *NotificationServer) SendNotification(route map[string]string, notification []byte) ([]int, error) {
 
 	ids := []int{}
+	errMsgs := []string{}
+	waitingGroup := sync.WaitGroup{}
 	connections := nh.incomingConnections.Get(route)
-	for _, conn := range connections {
-		defer func() {
-			if err := recover(); err != nil {
-				log.Printf("recover SendNotification %v, connection %d is not alive, error: %v", route, conn.ID, err)
+	waitingGroup.Add(len(connections))
+	for i := range connections {
+		go func(conn *Connection) {
+			// defer func() {
+			// 	if err := recover(); err != nil {
+			// 		log.Printf("recover SendNotification %v, connection %d is not alive, error: %v", route, conn.ID, err)
+			// 	}
+			// }()
+			// ids = append(ids, conn.ID)
+			defer waitingGroup.Done()
+			log.Printf("sending notification to: %v, id: %d", route, conn.ID)
+			err := nh.wa.WriteBinaryMessage(conn.conn, notification)
+			if err != nil {
+				e := fmt.Sprintf("In SendNotification %v, connection %d is not alive, error: %v", route, conn.ID, err)
+				errMsgs = append(errMsgs, e)
+				log.Printf("%s", e)
+				nh.CleanupIncomeConnection(conn.ID)
 			}
-		}()
-		ids = append(ids, conn.ID)
-		log.Printf("sending notification to: %v, id: %d", route, conn.ID)
-		err := nh.wa.WriteBinaryMessage(conn.conn, notification)
-		if err != nil {
-			log.Printf("In SendNotification %v, connection %d is not alive, error: %v", route, conn.ID, err)
-			defer nh.CleanupIncomeConnection(conn.ID)
-		}
+
+		}(connections[i])
+	}
+	waitingGroup.Wait()
+
+	if len(errMsgs) > 0 {
+		return ids, fmt.Errorf("%s", strings.Join(errMsgs, ";\n"))
 	}
 	return ids, nil
 }
@@ -251,7 +265,7 @@ func (nh *NotificationServer) CleanupOutgoingConnection(notificationAtt map[stri
 	// remove outgoing connection from list
 	nh.outgoingConnections.Remove(notificationAtt)
 
-	// close all incoming connections relaited to this attributes
+	// close all incoming connections related to this attributes
 	nh.incomingConnections.CloseConnections(nh.wa, notificationAtt)
 }
 
@@ -298,7 +312,6 @@ func (nh *NotificationServer) WebsocketReceiveNotification(conn *websocket.Conn)
 			if _, err := nh.SendNotification(n.Target, message); err != nil {
 				return fmt.Errorf("In WebsocketReceiveNotification SendNotification error: %v", err)
 			}
-
 		}
 	}
 }
