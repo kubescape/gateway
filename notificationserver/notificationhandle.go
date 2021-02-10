@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"notification-server/cautils"
@@ -12,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/gorilla/websocket"
 	"gopkg.in/mgo.v2/bson"
 
@@ -48,14 +48,14 @@ func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter
 	// ----------------------------------------------------- 1
 	// receive websocket connetction from client
 	if r.Method != http.MethodGet {
-		log.Printf("Method not allowed")
+		glog.Errorf("Method not allowed")
 		http.Error(w, "Method not allowed", 405)
 		return
 	}
 
 	conn, notificationAtt, err := nh.AcceptWebsocketConnection(w, r)
 	if err != nil {
-		log.Print(err)
+		glog.Error(err)
 		http.Error(w, err.Error(), 400)
 		return
 	}
@@ -66,7 +66,7 @@ func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter
 	id := nh.incomingConnections.Append(notificationAtt, conn)
 	defer nh.CleanupIncomeConnection(id)
 
-	log.Printf("accepting websocket connection. url query: %s, id: %d", r.URL.RawQuery, id)
+	glog.Infof("accepting websocket connection. url query: %s, id: %d", r.URL.RawQuery, id)
 
 	// ----------------------------------------------------- 3
 	// register route in master if master configured
@@ -76,7 +76,7 @@ func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter
 	// ----------------------------------------------------- 4
 	// Websocket read messages
 	if err := nh.WebsocketReceiveNotification(conn); err != nil {
-		// log.Printf("In WebsocketNotificationHandler connection closed. attributes: %v, error: %v", notificationAtt, err)
+		// glog.Infof("In WebsocketNotificationHandler connection closed. attributes: %v, error: %v", notificationAtt, err)
 	}
 
 }
@@ -93,7 +93,7 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string)
 
 	// if connected
 	if cons := nh.outgoingConnections.Get(att); len(cons) > 0 {
-		log.Printf("edge already connected to master, not creating new connection")
+		glog.Infof("edge already connected to master, not creating new connection")
 		// update master on new connection?
 		nh.outgoingConnectionsMutex.Unlock()
 		return
@@ -106,12 +106,12 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string)
 		masterURL += fmt.Sprintf("%s=%s", i, j)
 		amp = "&"
 	}
-	log.Printf("connecting to master: %s", masterURL)
+	glog.Infof("connecting to master: %s", masterURL)
 
 	// connect to master
 	conn, _, err := nh.wa.DefaultDialer(masterURL, nil)
 	if err != nil {
-		log.Printf("In ConnectToMaster: %v", err)
+		glog.Infof("In ConnectToMaster: %v", err)
 		nh.outgoingConnectionsMutex.Unlock()
 		return
 	}
@@ -128,33 +128,33 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string)
 		for {
 			time.Sleep(30 * time.Second)
 			if err := nh.wa.WritePingMessage(conn); err != nil {
-				log.Printf("In WritePingMessage attributes: %v, error: %s", att, err.Error())
+				glog.Errorf("In WritePingMessage attributes: %v, error: %s", att, err.Error())
 				cleanup <- true
 			}
 		}
 	}()
 	go func() {
 		if err := nh.WebsocketReceiveNotification(conn); err != nil {
-			log.Printf("In ConnectToMaster WebsocketReceiveNotification attributes: %v, error: %s", att, err.Error())
+			glog.Errorf("In ConnectToMaster WebsocketReceiveNotification attributes: %v, error: %s", att, err.Error())
 			cleanup <- true
 		}
 	}()
 
 	<-cleanup
-	log.Printf("disconnected from master with connection attributes: %v", att)
+	glog.Infof("disconnected from master with connection attributes: %v", att)
 }
 
 // RestAPINotificationHandler -
 func (nh *NotificationServer) RestAPINotificationHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		log.Printf("Method not allowed. returning 405")
+		glog.Errorf("Method not allowed. returning 405")
 		http.Error(w, "Method not allowed", 405)
 		return
 	}
 
 	readBuffer, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("In RestAPINotificationHandler ReadAll %v", err)
+		glog.Errorf("In RestAPINotificationHandler ReadAll %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -163,20 +163,20 @@ func (nh *NotificationServer) RestAPINotificationHandler(w http.ResponseWriter, 
 	// get notificationID from message
 	notificationAtt, err := nh.UnmarshalMessage(readBuffer)
 	if err != nil {
-		log.Printf("In RestAPINotificationHandler UnmarshalMessage %v", err)
+		glog.Errorf("In RestAPINotificationHandler UnmarshalMessage %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	log.Printf("REST API received message, attributes: %v", notificationAtt.Target)
+	glog.Infof("REST API received message, attributes: %v", notificationAtt.Target)
 	if notificationAtt.Target == nil || len(notificationAtt.Target) == 0 {
-		log.Printf("In RestAPINotificationHandler received empty notificationAtt.Target")
+		glog.Errorf("In RestAPINotificationHandler received empty notificationAtt.Target")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	// set message - add route to message
 	ids, err := nh.SendNotification(notificationAtt.Target, readBuffer)
 	if err != nil {
-		log.Printf("In RestAPINotificationHandler SendNotification %v, target: %v", err, notificationAtt.Target)
+		glog.Errorf("In RestAPINotificationHandler SendNotification %v, target: %v", err, notificationAtt.Target)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -197,17 +197,17 @@ func (nh *NotificationServer) SendNotification(route map[string]string, notifica
 		go func(conn *Connection) {
 			// defer func() {
 			// 	if err := recover(); err != nil {
-			// 		log.Printf("recover SendNotification %v, connection %d is not alive, error: %v", route, conn.ID, err)
+			// 		glog.Infof("recover SendNotification %v, connection %d is not alive, error: %v", route, conn.ID, err)
 			// 	}
 			// }()
 			// ids = append(ids, conn.ID)
 			defer waitingGroup.Done()
-			log.Printf("sending notification to: %v, id: %d", route, conn.ID)
+			glog.Infof("sending notification to: %v, id: %d", route, conn.ID)
 			err := nh.wa.WriteBinaryMessage(conn.conn, notification)
 			if err != nil {
 				e := fmt.Sprintf("In SendNotification %v, connection %d is not alive, error: %v", route, conn.ID, err)
 				errMsgs = append(errMsgs, e)
-				log.Printf("%s", e)
+				glog.Errorf("%s", e)
 				nh.CleanupIncomeConnection(conn.ID)
 			}
 
@@ -277,7 +277,7 @@ func (nh *NotificationServer) WebsocketReceiveNotification(conn *websocket.Conn)
 		if err != nil {
 			return err
 		}
-		// log.Printf("In WebsocketReceiveNotification received msgType: %d. (text=1, close=8, ping=9)", msgType)
+		// glog.Infof("In WebsocketReceiveNotification received msgType: %d. (text=1, close=8, ping=9)", msgType)
 		switch msgType {
 		case websocket.CloseMessage:
 			return fmt.Errorf("In WebsocketReceiveNotification websocket recieved CloseMessage")

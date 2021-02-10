@@ -1,10 +1,11 @@
 package notificationserver
 
 import (
-	"log"
 	"notification-server/cautils"
 	"os"
 	"strings"
+
+	"github.com/golang/glog"
 )
 
 var (
@@ -25,7 +26,7 @@ func SetupMasterInfo() {
 	if MASTER_ATTRIBUTES[len(MASTER_ATTRIBUTES)-1] == "" {
 		cautils.RemoveIndexFromStringSlice(&MASTER_ATTRIBUTES, len(MASTER_ATTRIBUTES)-1)
 	}
-	log.Printf("master host: %s, masterattribites: %v", MASTER_HOST, MASTER_ATTRIBUTES)
+	glog.Infof("master host: %s, masterattribites: %v", MASTER_HOST, MASTER_ATTRIBUTES)
 }
 
 // IsMaster is server master or edge

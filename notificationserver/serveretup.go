@@ -2,10 +2,11 @@ package notificationserver
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"regexp"
+
+	"github.com/golang/glog"
 )
 
 var (
@@ -62,7 +63,7 @@ func (ns *NotificationServer) SetupNotificationServer() {
 	h8002.HandleFunc(r8002, ns.RestAPINotificationHandler)
 	server8002.Handle("/", h8002)
 	go func() {
-		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", MASTER_REST_PORT), server8002))
+		glog.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", MASTER_REST_PORT), server8002))
 	}()
 
 	server8001 := http.NewServeMux()
@@ -71,7 +72,7 @@ func (ns *NotificationServer) SetupNotificationServer() {
 	h8001.HandleFunc(r8001, ns.WebsocketNotificationHandler)
 	server8001.Handle("/", h8001)
 	go func() {
-		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", WEBSOCKET_PORT), server8001))
+		glog.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", WEBSOCKET_PORT), server8001))
 	}()
 
 	<-finish

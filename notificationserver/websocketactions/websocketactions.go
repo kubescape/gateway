@@ -1,10 +1,10 @@
 package websocketactions
 
 import (
-	"log"
 	"net/http"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/gorilla/websocket"
 )
 
@@ -67,7 +67,7 @@ func (wa *WebsocketActions) DefaultDialer(host string, requestHeader http.Header
 			return conn, res, err
 		}
 		i++
-		log.Printf("attempt: %d, error message: %s", i, err.Error())
+		glog.Infof("attempt: %d, error message: %s", i, err.Error())
 		time.Sleep(time.Second * 5)
 	}
 
