@@ -30,7 +30,7 @@ type NotificationServer struct {
 func NewNotificationServer() *NotificationServer {
 	SetupMasterInfo()
 	return &NotificationServer{
-		wa:                       &websocketactions.WebsocketActions{},
+		wa:                       websocketactions.NewWebsocketActions(),
 		outgoingConnections:      *NewConnectionsObj(),
 		incomingConnections:      *NewConnectionsObj(),
 		outgoingConnectionsMutex: &sync.Mutex{},
