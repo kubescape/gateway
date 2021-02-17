@@ -34,7 +34,7 @@ func (wam *WebsocketActionsMock) WritePingMessage(conn *websocket.Conn) error {
 }
 
 // ReadMessage -
-func (wam *WebsocketActionsMock) ReadMessage(conn *websocket.Conn) (messageType int, p []byte, err error) {
+func (wam *WebsocketActionsMock) ReadMessage(conn *websocket.Conn) (int, []byte, error) {
 	return ReadMessageTypeMock, nil, nil
 }
 

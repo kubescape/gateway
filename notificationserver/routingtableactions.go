@@ -11,6 +11,7 @@ import (
 
 // Connection -
 type Connection struct {
+	mutex      *sync.Mutex
 	ID         int
 	conn       *websocket.Conn
 	attributes map[string]string
@@ -31,16 +32,18 @@ func NewConnectionsObj() *Connections {
 }
 
 // Append -
-func (cs *Connections) Append(attributes map[string]string, conn *websocket.Conn) int {
-	cs.mutex.Lock()
+func (cs *Connections) Append(attributes map[string]string, conn *websocket.Conn) (*Connection, int) {
 	id := rand.Int()
-	cs.connections = append(cs.connections, &Connection{
+	connection := &Connection{
 		ID:         id,
 		conn:       conn,
 		attributes: attributes,
-	})
+		mutex:      &sync.Mutex{},
+	}
+	cs.mutex.Lock()
+	cs.connections = append(cs.connections, connection)
 	cs.mutex.Unlock()
-	return id
+	return connection, id
 }
 
 // Remove from routing table
@@ -49,7 +52,7 @@ func (cs *Connections) Remove(attributes map[string]string) {
 	slcLen := len(cs.connections)
 	for i := 0; i < slcLen; i++ {
 		if cs.connections[i].AttributesContained(attributes) {
-			glog.Infof("Removing connection from incoming list: %d. attributes: %v", i, attributes)
+			glog.Infof("Removing connection from incoming list. index: %d. attributes: %v, id: %d, list len: %d", i, cs.connections[i].attributes, cs.connections[i].ID, len(cs.connections)-1)
 			if slcLen == 1 { //i is the only element in the slice so we need to remove this entry from the map
 				cs.connections = []*Connection{}
 			} else if i == slcLen-1 { // i is the last element in the slice so i+1 is out of range
@@ -70,7 +73,7 @@ func (cs *Connections) RemoveID(id int) {
 	slcLen := len(cs.connections)
 	for i := 0; i < slcLen; i++ {
 		if cs.connections[i].ID == id {
-			glog.Infof("Removing connection from incoming list. index: %d. attributes: %v, id: %d", i, cs.connections[i].attributes, cs.connections[i].ID)
+			glog.Infof("Removing connection from incoming list. index: %d. attributes: %v, id: %d, list len: %d", i, cs.connections[i].attributes, cs.connections[i].ID, len(cs.connections)-1)
 			if slcLen == 1 { //i is the only element in the slice so we need to remove this entry from the map
 				cs.connections = []*Connection{}
 			} else if i == slcLen-1 { // i is the last element in the slice so i+1 is out of range
