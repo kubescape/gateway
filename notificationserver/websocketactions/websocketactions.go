@@ -1,6 +1,7 @@
 package websocketactions
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -39,57 +40,68 @@ func NewWebsocketActions() *WebsocketActions {
 
 // ConnectWebsocket -
 func (wa *WebsocketActions) ConnectWebsocket(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {
-	wa.mutex.Lock()
-	defer wa.mutex.Unlock()
-	return upgrader.Upgrade(w, r, nil)
+	conn, err := upgrader.Upgrade(w, r, nil)
+	return conn, err
 }
 
 // WriteBinaryMessage -
 func (wa *WebsocketActions) WriteBinaryMessage(conn *websocket.Conn, readBuffer []byte) error {
 	wa.mutex.Lock()
-	defer wa.mutex.Unlock()
-	return conn.WriteMessage(websocket.BinaryMessage, readBuffer)
+	err := conn.WriteMessage(websocket.BinaryMessage, readBuffer)
+	wa.mutex.Unlock()
+	return err
 }
 
 // WritePongMessage -
 func (wa *WebsocketActions) WritePongMessage(conn *websocket.Conn) error {
 	wa.mutex.Lock()
-	defer wa.mutex.Unlock()
-	return conn.WriteMessage(websocket.PongMessage, []byte{})
+	err := conn.WriteMessage(websocket.PongMessage, []byte{})
+	wa.mutex.Unlock()
+	return err
 }
 
 // WritePingMessage -
 func (wa *WebsocketActions) WritePingMessage(conn *websocket.Conn) error {
 	wa.mutex.Lock()
-	defer wa.mutex.Unlock()
-	return conn.WriteMessage(websocket.PingMessage, []byte{})
+	err := conn.WriteMessage(websocket.PingMessage, []byte{})
+	wa.mutex.Unlock()
+	return err
 }
 
 // ReadMessage -
-func (wa *WebsocketActions) ReadMessage(conn *websocket.Conn) (messageType int, p []byte, err error) {
+func (wa *WebsocketActions) ReadMessage(conn *websocket.Conn) (int, []byte, error) {
 	wa.mutex.Lock()
-	defer wa.mutex.Unlock()
-	return conn.ReadMessage()
+	messageType, p, err := conn.ReadMessage()
+	wa.mutex.Unlock()
+	return messageType, p, err
 }
 
 // Close -
 func (wa *WebsocketActions) Close(conn *websocket.Conn) error {
-	return conn.Close()
+	defer func() {
+		if err := recover(); err != nil {
+			glog.Errorf("recover while closing connection, reason: %v", err)
+		}
+	}()
+	wa.mutex.Lock()
+	err := conn.Close()
+	wa.mutex.Unlock()
+	return err
 }
 
 // DefaultDialer -
 func (wa *WebsocketActions) DefaultDialer(host string, requestHeader http.Header) (*websocket.Conn, *http.Response, error) {
 	i := 0
 	for {
-		wa.mutex.Lock()
 		conn, res, err := websocket.DefaultDialer.Dial(host, nil)
+		if err != nil {
+			err = fmt.Errorf("failed dialing to: '%s', reason: '%s'", host, err.Error())
+		}
 		if err == nil || i == 2 {
-			wa.mutex.Unlock()
 			return conn, res, err
 		}
-		wa.mutex.Unlock()
 		i++
-		glog.Infof("attempt: %d, error message: %s", i, err.Error())
+		glog.Warningf("attempt: %d, error message: %s, waiting 5 seconds before retrying", i, err.Error())
 		time.Sleep(time.Second * 5)
 	}
 

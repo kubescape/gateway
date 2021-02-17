@@ -57,7 +57,7 @@ func TestParseURLQuery(t *testing.T) {
 		t.Errorf("len(att) != 2")
 	}
 	if att["customer"] != "test" || att["cluster"] != "kube" {
-		t.Errorf("worng key value")
+		t.Errorf("wrong key value")
 	}
 }
 
@@ -71,6 +71,6 @@ func TestParseURLPath(t *testing.T) {
 		t.Errorf("len(att) != 1")
 	}
 	if att["my-id"] != "" {
-		t.Errorf("worng key value")
+		t.Errorf("wrong key value")
 	}
 }
