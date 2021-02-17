@@ -48,29 +48,3 @@ func TestGet(t *testing.T) {
 		t.Errorf("%v", rtv4)
 	}
 }
-
-func TestConnections_RemoveID(t *testing.T) {
-	type fields struct {
-		connections []*Connection
-		mutex       *sync.RWMutex
-	}
-	type args struct {
-		id int
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cs := &Connections{
-				connections: tt.fields.connections,
-				mutex:       tt.fields.mutex,
-			}
-			cs.RemoveID(tt.args.id)
-		})
-	}
-}

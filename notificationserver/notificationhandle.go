@@ -59,10 +59,8 @@ func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter
 		http.Error(w, err.Error(), 400)
 		return
 	}
-	// defer nh.wa.Close(conn)
 
 	// ----------------------------------------------------- 2
-
 	// append new route
 	newConn, id := nh.incomingConnections.Append(notificationAtt, conn)
 	glog.Infof("accepting websocket connection. url query: %s, id: %d, number of incoming websockets: %d", r.URL.RawQuery, id, nh.incomingConnections.Len())
