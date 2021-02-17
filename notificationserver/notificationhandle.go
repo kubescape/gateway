@@ -213,7 +213,7 @@ func (nh *NotificationServer) SendNotification(route map[string]string, notifica
 	ids := []int{}
 	errMsgs := []string{}
 	connections := nh.incomingConnections.Get(route)
-	glog.Infof("sending notification to: %v, number of connections: %d", route)
+	glog.Infof("sending notification to: %v, number of connections: %d", route, len(connections))
 	for _, conn := range connections {
 		defer func() {
 			if err := recover(); err != nil {
