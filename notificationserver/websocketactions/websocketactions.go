@@ -3,6 +3,7 @@ package websocketactions
 import (
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/golang/glog"
@@ -17,23 +18,24 @@ var upgrader = websocket.Upgrader{
 // IWebsocketActions -
 type IWebsocketActions interface {
 	ConnectWebsocket(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error)
-	WriteBinaryMessage(conn *websocket.Conn, readBuffer []byte) error
-	WritePongMessage(conn *websocket.Conn) error
-	WritePingMessage(conn *websocket.Conn) error
-	ReadMessage(conn *websocket.Conn) (int, []byte, error)
-	Close(conn *websocket.Conn) error
+	WriteBinaryMessage(conn *Connection, readBuffer []byte) error
+	WritePongMessage(conn *Connection) error
+	WritePingMessage(conn *Connection) error
+	WritePreparedMessage(conn *Connection, preparedMessage *websocket.PreparedMessage) error
+	ReadMessage(conn *Connection) (int, []byte, error)
+	Close(conn *Connection) error
 	DefaultDialer(host string, requestHeader http.Header) (*websocket.Conn, *http.Response, error)
 }
 
 // WebsocketActions -
 type WebsocketActions struct {
-	// mutex *sync.Mutex
+	mutex *sync.Mutex
 }
 
 // NewWebsocketActions -
 func NewWebsocketActions() *WebsocketActions {
 	return &WebsocketActions{
-		// mutex: &sync.Mutex{},
+		mutex: &sync.Mutex{},
 	}
 }
 
@@ -44,37 +46,55 @@ func (wa *WebsocketActions) ConnectWebsocket(w http.ResponseWriter, r *http.Requ
 }
 
 // WriteBinaryMessage -
-func (wa *WebsocketActions) WriteBinaryMessage(conn *websocket.Conn, readBuffer []byte) error {
-	err := conn.WriteMessage(websocket.BinaryMessage, readBuffer)
+func (wa *WebsocketActions) WriteBinaryMessage(conn *Connection, readBuffer []byte) error {
+	conn.mutex.Lock()
+	defer conn.mutex.Unlock()
+	err := conn.conn.WriteMessage(websocket.BinaryMessage, readBuffer)
+	return err
+}
+
+// WritePreparedMessage -
+func (wa *WebsocketActions) WritePreparedMessage(conn *Connection, preparedMessage *websocket.PreparedMessage) error {
+	conn.mutex.Lock()
+	defer conn.mutex.Unlock()
+	err := conn.conn.WritePreparedMessage(preparedMessage)
 	return err
 }
 
 // WritePongMessage -
-func (wa *WebsocketActions) WritePongMessage(conn *websocket.Conn) error {
-	err := conn.WriteMessage(websocket.PongMessage, []byte{})
+func (wa *WebsocketActions) WritePongMessage(conn *Connection) error {
+	conn.mutex.Lock()
+	defer conn.mutex.Unlock()
+	err := conn.conn.WriteMessage(websocket.PongMessage, []byte{})
 	return err
 }
 
 // WritePingMessage -
-func (wa *WebsocketActions) WritePingMessage(conn *websocket.Conn) error {
-	err := conn.WriteMessage(websocket.PingMessage, []byte{})
+func (wa *WebsocketActions) WritePingMessage(conn *Connection) error {
+	conn.mutex.Lock()
+	defer conn.mutex.Unlock()
+	err := conn.conn.WriteMessage(websocket.PingMessage, []byte{})
 	return err
 }
 
 // ReadMessage -
-func (wa *WebsocketActions) ReadMessage(conn *websocket.Conn) (int, []byte, error) {
-	messageType, p, err := conn.ReadMessage()
+func (wa *WebsocketActions) ReadMessage(conn *Connection) (int, []byte, error) {
+	conn.mutex.Lock()
+	defer conn.mutex.Unlock()
+	messageType, p, err := conn.conn.ReadMessage()
 	return messageType, p, err
 }
 
 // Close -
-func (wa *WebsocketActions) Close(conn *websocket.Conn) error {
+func (wa *WebsocketActions) Close(conn *Connection) error {
+	conn.mutex.Lock()
+	defer conn.mutex.Unlock()
 	defer func() {
 		if err := recover(); err != nil {
 			glog.Errorf("recover while closing connection, reason: %v", err)
 		}
 	}()
-	err := conn.Close()
+	err := conn.conn.Close()
 	return err
 }
 

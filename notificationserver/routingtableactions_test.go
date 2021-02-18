@@ -1,21 +1,19 @@
 package notificationserver
 
 import (
+	"notification-server/notificationserver/websocketactions"
 	"sync"
 	"testing"
 )
 
 var ATTRIBUTES_MOCK = map[string]string{"customer": "test", "cluster": "yay"}
 
-func ConnectionMock() *Connection {
-	return &Connection{
-		attributes: ATTRIBUTES_MOCK,
-	}
-
+func ConnectionMock() *websocketactions.Connection {
+	return websocketactions.NewConnection(nil, 1234, ATTRIBUTES_MOCK)
 }
 func ConnectionsMock() *Connections {
 	return &Connections{
-		connections: []*Connection{
+		connections: []*websocketactions.Connection{
 			ConnectionMock(),
 		},
 		mutex: &sync.RWMutex{},

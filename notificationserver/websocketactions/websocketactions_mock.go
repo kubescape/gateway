@@ -19,22 +19,27 @@ func (wam *WebsocketActionsMock) ConnectWebsocket(w http.ResponseWriter, r *http
 }
 
 // WriteBinaryMessage -
-func (wam *WebsocketActionsMock) WriteBinaryMessage(conn *websocket.Conn, readBuffer []byte) error {
+func (wam *WebsocketActionsMock) WriteBinaryMessage(conn *Connection, readBuffer []byte) error {
+	return nil
+}
+
+// WritePreparedMessage -
+func (wam *WebsocketActionsMock) WritePreparedMessage(conn *Connection, preparedMessage *websocket.PreparedMessage) error {
 	return nil
 }
 
 // WritePongMessage -
-func (wam *WebsocketActionsMock) WritePongMessage(conn *websocket.Conn) error {
+func (wam *WebsocketActionsMock) WritePongMessage(conn *Connection) error {
 	return nil
 }
 
 // WritePingMessage -
-func (wam *WebsocketActionsMock) WritePingMessage(conn *websocket.Conn) error {
+func (wam *WebsocketActionsMock) WritePingMessage(conn *Connection) error {
 	return nil
 }
 
 // ReadMessage -
-func (wam *WebsocketActionsMock) ReadMessage(conn *websocket.Conn) (int, []byte, error) {
+func (wam *WebsocketActionsMock) ReadMessage(conn *Connection) (int, []byte, error) {
 	return ReadMessageTypeMock, nil, nil
 }
 
@@ -44,6 +49,6 @@ func (wam *WebsocketActionsMock) DefaultDialer(host string, requestHeader http.H
 }
 
 // Close -
-func (wam *WebsocketActionsMock) Close(conn *websocket.Conn) error {
+func (wam *WebsocketActionsMock) Close(conn *Connection) error {
 	return nil
 }

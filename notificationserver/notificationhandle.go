@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"notification-server/cautils"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/gorilla/websocket"
@@ -79,7 +81,7 @@ func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter
 		// }
 	}
 	nh.CleanupIncomeConnection(id)
-	nh.wa.Close(conn)
+	nh.wa.Close(newConn)
 }
 
 // ConnectToMaster -
@@ -144,7 +146,7 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string,
 
 	// <-cleanup
 
-	nh.wa.Close(conn)
+	nh.wa.Close(connObj)
 	if retry < 2 {
 		glog.Warningf("disconnected from master with connection attributes: %v, retrying: %d", att, retry+1)
 		nh.outgoingConnections.Remove(notificationAtt)
@@ -212,25 +214,46 @@ func (nh *NotificationServer) SendNotification(route map[string]string, notifica
 	errMsgs := []string{}
 	connections := nh.incomingConnections.Get(route)
 	glog.Infof("sending notification to: %v, number of connections: %d", route, len(connections))
+	if len(connections) == 0 {
+		return ids, nil
+	}
+	preparedMessage, err := websocket.NewPreparedMessage(websocket.BinaryMessage, notification)
+	if err != nil {
+		return ids, fmt.Errorf("failed to prepare message, reason: %s", err.Error())
+	}
 	for _, conn := range connections {
-		defer func() {
-			if err := recover(); err != nil {
-				glog.Errorf("recover SendNotification %v, connection %d is not alive, error: %v", route, conn.ID, err)
-				nh.CleanupIncomeConnection(conn.ID)
-			}
-		}()
-		err := nh.wa.WriteBinaryMessage(conn.conn, notification)
-		if err != nil {
-			e := fmt.Sprintf("In SendNotification %v, connection %d is not alive, error: %v", route, conn.ID, err)
-			nh.CleanupIncomeConnection(conn.ID)
-			errMsgs = append(errMsgs, e)
-		}
+		go nh.sendSingleNotification(conn, preparedMessage, 0)
 	}
 
 	if len(errMsgs) > 0 {
 		return ids, fmt.Errorf("%s", strings.Join(errMsgs, ";\n"))
 	}
 	return ids, nil
+}
+func (nh *NotificationServer) sendSingleNotification(conn *websocketactions.Connection, preparedMessage *websocket.PreparedMessage, retry int) error {
+	defer func() {
+		if err := recover(); err != nil {
+			if retry < 2 && strings.Contains(fmt.Sprintf("%v", err), "concurrent write to websocket connection") {
+				timeWait := time.Duration(rand.Intn(120)) * time.Millisecond
+				glog.Errorf("recover sendSingleNotification, connection %d is not alive, error: %v, retry: %d, retrying in: %s", conn.ID, err, retry+1, timeWait.String())
+				time.Sleep(timeWait)
+				nh.sendSingleNotification(conn, preparedMessage, retry+1)
+			} else {
+				glog.Errorf("recover sendSingleNotification, connection %d is not alive, error: %v, closing connection", conn.ID, err)
+				nh.wa.Close(conn)
+			}
+		}
+	}()
+	glog.Infof("sending notification, attributes: %v, id: %d, retry: %d", conn.GetAttributes(), conn.ID, retry)
+	err := nh.wa.WritePreparedMessage(conn, preparedMessage)
+	if err != nil {
+		nh.CleanupIncomeConnection(conn.ID)
+		e := fmt.Errorf("In sendSingleNotification %v, connection %d is not alive, error: %v", conn.GetAttributes(), conn.ID, err)
+		glog.Errorf(e.Error())
+		return e
+	}
+	glog.Infof("notification sent successfully, attributes: %v, id: %d, retry: %d", conn.GetAttributes(), conn.ID, retry)
+	return nil
 }
 
 // AcceptWebsocketConnection -
@@ -281,10 +304,10 @@ func (nh *NotificationServer) CleanupOutgoingConnection(notificationAtt map[stri
 }
 
 // WebsocketReceiveNotification maintain websocket connection // RestAPIReceiveNotification -
-func (nh *NotificationServer) WebsocketReceiveNotification(connObj *Connection) error {
+func (nh *NotificationServer) WebsocketReceiveNotification(connObj *websocketactions.Connection) error {
 	// Websocket ping pong
 	for {
-		msgType, message, err := nh.wa.ReadMessage(connObj.conn)
+		msgType, message, err := nh.wa.ReadMessage(connObj)
 		if err != nil {
 			return err
 		}
@@ -293,7 +316,7 @@ func (nh *NotificationServer) WebsocketReceiveNotification(connObj *Connection) 
 		case websocket.CloseMessage:
 			return fmt.Errorf("In WebsocketReceiveNotification websocket received CloseMessage")
 		case websocket.PingMessage:
-			err := nh.wa.WritePongMessage(connObj.conn)
+			err := nh.wa.WritePongMessage(connObj)
 			if err != nil {
 				return fmt.Errorf("In WebsocketReceiveNotification WritePongMessage error: %v", err)
 			}
