@@ -186,17 +186,7 @@ func (nh *NotificationServer) RestAPINotificationHandler(w http.ResponseWriter, 
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	// set message - add route to message
-	if notificationAtt.SendSynchronicity {
-		go func() {
-			if _, err := nh.SendNotification(notificationAtt.Target, readBuffer); err != nil {
-				glog.Errorf("In RestAPINotificationHandler SendNotification %v, target: %v", err, notificationAtt.Target)
-			}
-		}()
-		w.WriteHeader(http.StatusAccepted)
-		return
-	}
-	ids, err := nh.SendNotification(notificationAtt.Target, readBuffer)
+	ids, err := nh.SendNotification(notificationAtt.Target, readBuffer, notificationAtt.SendSynchronicity)
 	if err != nil {
 		glog.Errorf("In RestAPINotificationHandler SendNotification %v, target: %v", err, notificationAtt.Target)
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -208,7 +198,7 @@ func (nh *NotificationServer) RestAPINotificationHandler(w http.ResponseWriter, 
 }
 
 // SendNotification -
-func (nh *NotificationServer) SendNotification(route map[string]string, notification []byte) ([]int, error) {
+func (nh *NotificationServer) SendNotification(route map[string]string, notification []byte, sendSynchronicity bool) ([]int, error) {
 
 	ids := []int{}
 	errMsgs := []string{}
@@ -222,7 +212,13 @@ func (nh *NotificationServer) SendNotification(route map[string]string, notifica
 		return ids, fmt.Errorf("failed to prepare message, reason: %s", err.Error())
 	}
 	for _, conn := range connections {
-		go nh.sendSingleNotification(conn, preparedMessage, 0)
+		if sendSynchronicity {
+			if err := nh.sendSingleNotification(conn, preparedMessage, 0); err != nil {
+				errMsgs = append(errMsgs, err.Error())
+			}
+		} else {
+			go nh.sendSingleNotification(conn, preparedMessage, 0)
+		}
 	}
 
 	if len(errMsgs) > 0 {
@@ -244,7 +240,7 @@ func (nh *NotificationServer) sendSingleNotification(conn *websocketactions.Conn
 			}
 		}
 	}()
-	glog.Infof("sending notification, attributes: %v, id: %d, retry: %d", conn.GetAttributes(), conn.ID, retry)
+	glog.Infof("sending notification, attributes: %v, id: %d", conn.GetAttributes(), conn.ID, retry)
 	err := nh.wa.WritePreparedMessage(conn, preparedMessage)
 	if err != nil {
 		nh.CleanupIncomeConnection(conn.ID)
@@ -252,7 +248,7 @@ func (nh *NotificationServer) sendSingleNotification(conn *websocketactions.Conn
 		glog.Errorf(e.Error())
 		return e
 	}
-	glog.Infof("notification sent successfully, attributes: %v, id: %d, retry: %d", conn.GetAttributes(), conn.ID, retry)
+	// glog.Infof("notification sent successfully, attributes: %v, id: %d", conn.GetAttributes(), conn.ID, retry)
 	return nil
 }
 
@@ -339,17 +335,9 @@ func (nh *NotificationServer) WebsocketReceiveNotification(connObj *websocketact
 			return fmt.Errorf("In WebsocketReceiveNotification received empty notification.Target")
 		}
 		// send message
-		if n.SendSynchronicity {
-			go func() {
-				if _, err := nh.SendNotification(n.Target, message); err != nil {
-					glog.Errorf("In WebsocketReceiveNotification SendNotification error: %v", err)
-				}
-			}()
-		} else {
-			if _, err := nh.SendNotification(n.Target, message); err != nil {
-				glog.Errorf("In WebsocketReceiveNotification SendNotification error: %v", err)
-				return fmt.Errorf("In WebsocketReceiveNotification SendNotification error: %v", err)
-			}
+		if _, err := nh.SendNotification(n.Target, message, n.SendSynchronicity); err != nil {
+			glog.Errorf("In WebsocketReceiveNotification SendNotification error: %v", err)
+			return fmt.Errorf("In WebsocketReceiveNotification SendNotification error: %v", err)
 		}
 	}
 }

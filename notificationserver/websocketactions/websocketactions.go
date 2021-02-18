@@ -3,7 +3,6 @@ package websocketactions
 import (
 	"fmt"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/golang/glog"
@@ -29,14 +28,11 @@ type IWebsocketActions interface {
 
 // WebsocketActions -
 type WebsocketActions struct {
-	mutex *sync.Mutex
 }
 
 // NewWebsocketActions -
 func NewWebsocketActions() *WebsocketActions {
-	return &WebsocketActions{
-		mutex: &sync.Mutex{},
-	}
+	return &WebsocketActions{}
 }
 
 // ConnectWebsocket -
@@ -79,8 +75,6 @@ func (wa *WebsocketActions) WritePingMessage(conn *Connection) error {
 
 // ReadMessage -
 func (wa *WebsocketActions) ReadMessage(conn *Connection) (int, []byte, error) {
-	conn.mutex.Lock()
-	defer conn.mutex.Unlock()
 	messageType, p, err := conn.conn.ReadMessage()
 	return messageType, p, err
 }
