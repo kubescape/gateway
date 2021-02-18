@@ -240,7 +240,7 @@ func (nh *NotificationServer) sendSingleNotification(conn *websocketactions.Conn
 			}
 		}
 	}()
-	glog.Infof("sending notification, attributes: %v, id: %d", conn.GetAttributes(), conn.ID, retry)
+	glog.Infof("sending notification, attributes: %v, id: %d", conn.GetAttributes(), conn.ID)
 	err := nh.wa.WritePreparedMessage(conn, preparedMessage)
 	if err != nil {
 		nh.CleanupIncomeConnection(conn.ID)
@@ -248,7 +248,7 @@ func (nh *NotificationServer) sendSingleNotification(conn *websocketactions.Conn
 		glog.Errorf(e.Error())
 		return e
 	}
-	// glog.Infof("notification sent successfully, attributes: %v, id: %d", conn.GetAttributes(), conn.ID, retry)
+	// glog.Infof("notification sent successfully, attributes: %v, id: %d", conn.GetAttributes(), conn.ID)
 	return nil
 }
 
