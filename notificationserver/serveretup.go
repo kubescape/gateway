@@ -6,14 +6,12 @@ import (
 	"os"
 	"regexp"
 
+	"asterix.cyberarmor.io/cyberarmor/capacketsgo/notificationserver"
 	"github.com/golang/glog"
 )
 
 var (
-	VERSION          = "v1"
-	MASTER_REST_API  = "sendnotification"
 	MASTER_REST_PORT = "8002"
-	WEBSOCKET_API    = "waitfornotification"
 	WEBSOCKET_PORT   = "8001"
 )
 
@@ -59,7 +57,7 @@ func (ns *NotificationServer) SetupNotificationServer() {
 
 	server8002 := http.NewServeMux()
 	var h8002 = new(RegexpHandler)
-	r8002, _ := regexp.Compile(fmt.Sprintf("/%s/%s.*", VERSION, MASTER_REST_API))
+	r8002, _ := regexp.Compile(fmt.Sprintf("%s.*", notificationserver.PathRESTV1))
 	h8002.HandleFunc(r8002, ns.RestAPINotificationHandler)
 	server8002.Handle("/", h8002)
 	go func() {
@@ -68,7 +66,7 @@ func (ns *NotificationServer) SetupNotificationServer() {
 
 	server8001 := http.NewServeMux()
 	var h8001 = new(RegexpHandler)
-	r8001, _ := regexp.Compile(fmt.Sprintf("/%s/%s.*", VERSION, WEBSOCKET_API))
+	r8001, _ := regexp.Compile(fmt.Sprintf("%s.*", notificationserver.PathWebsocketV1))
 	h8001.HandleFunc(r8001, ns.WebsocketNotificationHandler)
 	server8001.Handle("/", h8001)
 	go func() {

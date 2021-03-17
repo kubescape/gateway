@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"notification-server/notificationserver"
 
+	"asterix.cyberarmor.io/cyberarmor/capacketsgo/k8sshared/probes"
+
 	"github.com/golang/glog"
 )
 
@@ -13,9 +15,11 @@ func main() {
 	flag.Parse()
 	flag.Set("alsologtostderr", "1")
 	DisplayBuildTag()
-
+	isReadinessReady := false
+	go probes.InitReadinessV1(&isReadinessReady)
 	ns := notificationserver.NewNotificationServer()
 	fmt.Printf("NewNotificationServer")
+	isReadinessReady = true
 	ns.SetupNotificationServer()
 }
 

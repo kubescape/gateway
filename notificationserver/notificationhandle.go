@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"asterix.cyberarmor.io/cyberarmor/capacketsgo/notificationserver"
 	"github.com/golang/glog"
 	"github.com/gorilla/websocket"
 	"gopkg.in/mgo.v2/bson"
@@ -38,12 +39,7 @@ func NewNotificationServer() *NotificationServer {
 	}
 }
 
-// Notification passed between servers
-type Notification struct {
-	Target            map[string]string `json:"target"`
-	SendSynchronicity bool              `json:"sendSynchronicity"`
-	Notification      interface{}       `json:"notification"`
-}
+type Notification notificationserver.Notification
 
 // WebsocketNotificationHandler - create websocket with server
 func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter, r *http.Request) {
