@@ -87,7 +87,9 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string,
 	}
 
 	att := cautils.MergeSliceAndMap(MASTER_ATTRIBUTES, notificationAtt)
-
+	if len(att) == 0 {
+		att = notificationAtt
+	}
 	nh.outgoingConnectionsMutex.Lock() // lock connecting to master to prevent many connections
 
 	// if connected

@@ -26,10 +26,13 @@ func SetupMasterInfo() {
 	if MASTER_ATTRIBUTES[len(MASTER_ATTRIBUTES)-1] == "" {
 		cautils.RemoveIndexFromStringSlice(&MASTER_ATTRIBUTES, len(MASTER_ATTRIBUTES)-1)
 	}
-	glog.Infof("master host: %s, masterattribites: %v", MASTER_HOST, MASTER_ATTRIBUTES)
+	if len(MASTER_ATTRIBUTES) == 0 {
+		MASTER_ATTRIBUTES = []string{"customerGUID"}
+	}
+	glog.Infof("master host: %s, master attributes: %v", MASTER_HOST, MASTER_ATTRIBUTES)
 }
 
 // IsMaster is server master or edge
 func IsMaster() bool {
-	return (len(MASTER_ATTRIBUTES) == 0 || MASTER_HOST == "")
+	return MASTER_HOST == ""
 }
