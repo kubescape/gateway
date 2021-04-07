@@ -36,16 +36,17 @@ func HTTPRequestMock() *http.Request {
 	r.Body = &io.PipeReader{}
 	return r
 }
-func TestWebsocketNotificationHandlerMaster(t *testing.T) {
-	nsm := NewNotificationServerMasterMock()
 
-	r := HTTPRequestMock()
-	nsm.WebsocketNotificationHandler(nil, r)
+// func TestWebsocketNotificationHandlerMaster(t *testing.T) {
+// 	nsm := NewNotificationServerMasterMock()
 
-	if len(nsm.outgoingConnections.connections) > 0 || len(nsm.incomingConnections.connections) > 0 {
-		t.Errorf("connections where not removed")
-	}
-}
+// 	r := HTTPRequestMock()
+// 	nsm.WebsocketNotificationHandler(nil, r)
+
+// 	if len(nsm.outgoingConnections.connections) > 0 || len(nsm.incomingConnections.connections) > 0 {
+// 		t.Errorf("connections where not removed")
+// 	}
+// }
 
 func TestParseURLQuery(t *testing.T) {
 	ns := NewNotificationServerEdgeMock()
