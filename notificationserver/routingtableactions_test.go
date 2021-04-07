@@ -45,4 +45,10 @@ func TestGet(t *testing.T) {
 	if len(rtv4) != 1 {
 		t.Errorf("%v", rtv4)
 	}
+
+	att5 := map[string]string{"customerGUID": "test"}
+	rtv5 := cs.Get(att5)
+	if len(rtv5) != 0 {
+		t.Errorf("%v", rtv5)
+	}
 }

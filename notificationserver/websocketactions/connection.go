@@ -31,12 +31,14 @@ func (c *Connection) GetAttributes() map[string]string {
 
 // AttributesContained -
 func (c *Connection) AttributesContained(attributes map[string]string) bool {
+	found := false
 	for i, j := range c.attributes {
 		if v, k := attributes[i]; k {
 			if v != j {
 				return false
 			}
+			found = true
 		}
 	}
-	return true
+	return found
 }

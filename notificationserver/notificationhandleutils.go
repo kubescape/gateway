@@ -1,10 +1,9 @@
 package notificationserver
 
 import (
-	"notification-server/cautils"
 	"os"
-	"strings"
 
+	"asterix.cyberarmor.io/cyberarmor/capacketsgo/notificationserver"
 	"github.com/golang/glog"
 )
 
@@ -16,19 +15,19 @@ var (
 )
 
 func SetupMasterInfo() {
-	att, k1 := os.LookupEnv("MASTER_NOTIFICATION_SERVER_ATTRIBUTES")
+	// att, k1 := os.LookupEnv("MASTER_NOTIFICATION_SERVER_ATTRIBUTES")
 	host, k0 := os.LookupEnv("MASTER_NOTIFICATION_SERVER_HOST")
-	if !k0 || !k1 {
+	if !k0 {
+		glog.Infof("Running notification server as master")
 		return
 	}
 	MASTER_HOST = host
-	MASTER_ATTRIBUTES = strings.Split(att, ";")
-	if MASTER_ATTRIBUTES[len(MASTER_ATTRIBUTES)-1] == "" {
-		cautils.RemoveIndexFromStringSlice(&MASTER_ATTRIBUTES, len(MASTER_ATTRIBUTES)-1)
-	}
-	if len(MASTER_ATTRIBUTES) == 0 {
-		MASTER_ATTRIBUTES = []string{"customerGUID"}
-	}
+	// if MASTER_ATTRIBUTES[len(MASTER_ATTRIBUTES)-1] == "" {
+	// 	cautils.RemoveIndexFromStringSlice(&MASTER_ATTRIBUTES, len(MASTER_ATTRIBUTES)-1)
+	// }
+	// if len(MASTER_ATTRIBUTES) == 0 {
+	MASTER_ATTRIBUTES = []string{notificationserver.TargetCustomer, "customer"} // agent uses customer
+	// }
 	glog.Infof("master host: %s, master attributes: %v", MASTER_HOST, MASTER_ATTRIBUTES)
 }
 
