@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	MASTER_REST_PORT = "8002"
-	WEBSOCKET_PORT   = "8001"
+	CA_NOTIFICATION_SERVER_PORT    = "8002"
+	CA_NOTIFICATION_SERVER_WS_PORT = "8001"
 )
 
 type notificationHandlerFunc func(http.ResponseWriter, *http.Request)
@@ -47,11 +47,11 @@ func (h *RegexpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // SetupNotificationServer set up listening http servers
 func (ns *NotificationServer) SetupNotificationServer() {
-	if port, ok := os.LookupEnv("CA_WEBSOCKET_PORT"); ok {
-		WEBSOCKET_PORT = port
+	if port, ok := os.LookupEnv("CA_NOTIFICATION_SERVER_WS_PORT"); ok {
+		CA_NOTIFICATION_SERVER_WS_PORT = port
 	}
-	if port, ok := os.LookupEnv("CA_REST_API_PORT"); ok {
-		MASTER_REST_PORT = port
+	if port, ok := os.LookupEnv("CA_NOTIFICATION_SERVER_PORT"); ok {
+		CA_NOTIFICATION_SERVER_PORT = port
 	}
 	finish := make(chan bool)
 
@@ -61,7 +61,7 @@ func (ns *NotificationServer) SetupNotificationServer() {
 	h8002.HandleFunc(r8002, ns.RestAPINotificationHandler)
 	server8002.Handle("/", h8002)
 	go func() {
-		glog.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", MASTER_REST_PORT), server8002))
+		glog.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", CA_NOTIFICATION_SERVER_PORT), server8002))
 	}()
 
 	server8001 := http.NewServeMux()
@@ -70,7 +70,7 @@ func (ns *NotificationServer) SetupNotificationServer() {
 	h8001.HandleFunc(r8001, ns.WebsocketNotificationHandler)
 	server8001.Handle("/", h8001)
 	go func() {
-		glog.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", WEBSOCKET_PORT), server8001))
+		glog.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", CA_NOTIFICATION_SERVER_WS_PORT), server8001))
 	}()
 
 	<-finish
