@@ -1,6 +1,7 @@
 package notificationserver
 
 import (
+	"notification-server/cautils"
 	"os"
 
 	"github.com/armosec/capacketsgo/notificationserver"
@@ -28,7 +29,7 @@ func SetupMasterInfo() {
 	// if len(MASTER_ATTRIBUTES) == 0 {
 	MASTER_ATTRIBUTES = []string{notificationserver.TargetCustomer, "customer"} // agent uses customer
 	// }
-	glog.Infof("master host: %s, master attributes: %v", MASTER_HOST, MASTER_ATTRIBUTES)
+	glog.Infof("master host: %s, master attributes: %v", MASTER_HOST, cautils.ObjectToString(MASTER_ATTRIBUTES))
 }
 
 // IsMaster is server master or edge

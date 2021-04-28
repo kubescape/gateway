@@ -1,5 +1,7 @@
 package cautils
 
+import "encoding/json"
+
 // RemoveIndexFromStringSlice -
 func RemoveIndexFromStringSlice(s *[]string, index int) {
 	(*s)[index] = (*s)[len(*s)-1]
@@ -16,4 +18,13 @@ func MergeSliceAndMap(s []string, m map[string]string) map[string]string {
 		}
 	}
 	return merged
+}
+
+// ObjectToString Convert an object to a string
+func ObjectToString(obj interface{}) string {
+	bm, err := json.Marshal(obj)
+	if err != nil {
+		return ""
+	}
+	return string(bm)
 }
