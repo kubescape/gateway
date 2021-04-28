@@ -6,7 +6,7 @@ import (
 	"os"
 	"regexp"
 
-	"asterix.cyberarmor.io/cyberarmor/capacketsgo/notificationserver"
+	"github.com/armosec/capacketsgo/notificationserver"
 	"github.com/golang/glog"
 )
 

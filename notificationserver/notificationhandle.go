@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"asterix.cyberarmor.io/cyberarmor/capacketsgo/notificationserver"
+	"github.com/armosec/capacketsgo/notificationserver"
 	"github.com/golang/glog"
 	"github.com/gorilla/websocket"
 	"gopkg.in/mgo.v2/bson"
