@@ -125,18 +125,18 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string,
 	// cleanup := make(chan bool)
 
 	// read/write for keeping websocket connection alive
-	// go func() {
-	// 	for {
-	// 		time.Sleep(30 * time.Second)
-	// 		if err := nh.wa.WritePingMessage(conn); err != nil {
-	// 			glog.Errorf("In WritePingMessage attributes: %v, error: %s", att, err.Error())
-	// 			// cleanup <- true
-	// 		}
-	// 	}
-	// }()
+	go func() {
+		for {
+			time.Sleep(10 * time.Second)
+			if err := nh.wa.WritePingMessage(connObj); err != nil {
+				glog.Errorf("In WritePingMessage attributes: %v, error: %s", att, err.Error())
+				// cleanup <- true
+			}
+		}
+	}()
 	// for {
 	if err := nh.WebsocketReceiveNotification(connObj); err != nil {
-		glog.Errorf("In ConnectToMaster WebsocketReceiveNotification attributes: %s, error: %s", cautils.ObjectToString(att), err.Error())
+		glog.Errorf("In ConnectToMaster. attributes: %s, error: %s", cautils.ObjectToString(att), err.Error())
 		// cleanup <- true
 		// break
 	}
