@@ -29,6 +29,11 @@ func (c *Connection) GetAttributes() map[string]string {
 	return c.attributes
 }
 
+// GetAttributes -
+func (c *Connection) Close() {
+	c.Close()
+}
+
 // AttributesContained -
 func (c *Connection) AttributesContained(attributes map[string]string) bool {
 	found := false

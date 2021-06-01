@@ -130,6 +130,7 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string,
 			time.Sleep(10 * time.Second)
 			if err := nh.wa.WritePingMessage(connObj); err != nil {
 				glog.Errorf("In WritePingMessage attributes: %v, error: %s", att, err.Error())
+				connObj.Close()
 				// cleanup <- true
 			}
 		}
