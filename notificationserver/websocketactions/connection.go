@@ -31,7 +31,8 @@ func (c *Connection) GetAttributes() map[string]string {
 
 // GetAttributes -
 func (c *Connection) Close() {
-	c.Close()
+	defer recover()
+	c.conn.Close()
 }
 
 // AttributesContained -
