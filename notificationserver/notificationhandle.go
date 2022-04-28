@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/armosec/capacketsgo/notificationserver"
+	notifier "github.com/armosec/cluster-notifier-api-go/notificationserver"
 	"github.com/golang/glog"
 	"github.com/gorilla/websocket"
 	"gopkg.in/mgo.v2/bson"
@@ -39,7 +39,7 @@ func NewNotificationServer() *NotificationServer {
 	}
 }
 
-type Notification notificationserver.Notification
+type Notification notifier.Notification
 
 // WebsocketNotificationHandler - create websocket with server
 func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter, r *http.Request) {

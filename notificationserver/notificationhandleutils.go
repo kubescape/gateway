@@ -4,7 +4,7 @@ import (
 	"notification-server/cautils"
 	"os"
 
-	"github.com/armosec/capacketsgo/notificationserver"
+	notifier "github.com/armosec/cluster-notifier-api-go/notificationserver"
 	"github.com/golang/glog"
 )
 
@@ -27,7 +27,7 @@ func SetupMasterInfo() {
 	// 	cautils.RemoveIndexFromStringSlice(&MASTER_ATTRIBUTES, len(MASTER_ATTRIBUTES)-1)
 	// }
 	// if len(MASTER_ATTRIBUTES) == 0 {
-	MASTER_ATTRIBUTES = []string{notificationserver.TargetCustomer, "customer"} // agent uses customer
+	MASTER_ATTRIBUTES = []string{notifier.TargetCustomer, "customer"} // agent uses customer
 	// }
 	glog.Infof("master host: %s, master attributes: %v", MASTER_HOST, cautils.ObjectToString(MASTER_ATTRIBUTES))
 }

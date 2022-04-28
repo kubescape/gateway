@@ -6,7 +6,7 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/armosec/capacketsgo/notificationserver"
+	notifier "github.com/armosec/cluster-notifier-api-go/notificationserver"
 	"github.com/golang/glog"
 )
 
@@ -14,8 +14,6 @@ var (
 	CA_NOTIFICATION_SERVER_PORT    = "8002"
 	CA_NOTIFICATION_SERVER_WS_PORT = "8001"
 )
-
-type notificationHandlerFunc func(http.ResponseWriter, *http.Request)
 
 type route struct {
 	pattern *regexp.Regexp
@@ -57,7 +55,7 @@ func (ns *NotificationServer) SetupNotificationServer() {
 
 	server8002 := http.NewServeMux()
 	var h8002 = new(RegexpHandler)
-	r8002, _ := regexp.Compile(fmt.Sprintf("%s.*", notificationserver.PathRESTV1))
+	r8002, _ := regexp.Compile(fmt.Sprintf("%s.*", notifier.PathRESTV1))
 	h8002.HandleFunc(r8002, ns.RestAPINotificationHandler)
 	server8002.Handle("/", h8002)
 	go func() {
@@ -66,7 +64,7 @@ func (ns *NotificationServer) SetupNotificationServer() {
 
 	server8001 := http.NewServeMux()
 	var h8001 = new(RegexpHandler)
-	r8001, _ := regexp.Compile(fmt.Sprintf("%s.*", notificationserver.PathWebsocketV1))
+	r8001, _ := regexp.Compile(fmt.Sprintf("%s.*", notifier.PathWebsocketV1))
 	h8001.HandleFunc(r8001, ns.WebsocketNotificationHandler)
 	server8001.Handle("/", h8001)
 	go func() {

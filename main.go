@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"notification-server/notificationserver"
 
-	"github.com/armosec/capacketsgo/k8sshared/probes"
+	"github.com/armosec/utils-k8s-go/probes"
 
 	"github.com/golang/glog"
 )

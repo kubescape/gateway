@@ -1,7 +1,0 @@
-FROM quay.io/armosec/notification-server-ubi:latest
-
-COPY notification-server .
-
-RUN echo $(date -u) > /build_number.txt
-
-ENTRYPOINT ["./notification-server"]
