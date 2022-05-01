@@ -8,11 +8,13 @@ import (
 	"net/http"
 	"net/url"
 	"notification-server/cautils"
+	"os"
 	"strings"
 	"sync"
 	"time"
 
 	notifier "github.com/armosec/cluster-notifier-api-go/notificationserver"
+	"github.com/armosec/utils-k8s-go/armometadata"
 	"github.com/golang/glog"
 	"github.com/gorilla/websocket"
 	"gopkg.in/mgo.v2/bson"
@@ -30,6 +32,11 @@ type NotificationServer struct {
 
 // NewNotificationServer -
 func NewNotificationServer() *NotificationServer {
+	pathToConfig := os.Getenv("CA_CONFIG") // if empty, will load config from default path
+	if _, err := armometadata.LoadConfig(pathToConfig, true); err != nil {
+		glog.Warning(err.Error())
+	}
+
 	SetupMasterInfo()
 	return &NotificationServer{
 		wa:                       websocketactions.NewWebsocketActions(),

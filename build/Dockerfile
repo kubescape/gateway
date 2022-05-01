@@ -1,6 +1,6 @@
 FROM golang:1.18-alpine as builder
 
-ENV RELEASE=$image_version
+
 
 ENV GO111MODULE=
 
@@ -21,5 +21,6 @@ USER armo
 WORKDIR /home/armo/
 
 COPY --from=builder /work/build/notification /usr/bin/notification
+ENV RELEASE=$image_version
 
 ENTRYPOINT ["notification"]
