@@ -79,7 +79,6 @@ func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter
 	// Websocket read messages
 	if err := nh.WebsocketReceiveNotification(newConn); err != nil {
 		if !strings.Contains(err.Error(), "CloseMessage") {
-			// glog.Errorf("dwertent, In WebsocketNotificationHandler, id: %d, attributes: '%s', error: '%v'", id, cautils.ObjectToString(notificationAtt), err)
 			// nh.wa.Close(conn)
 		}
 	}
@@ -119,55 +118,45 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string,
 	conn, _, err := nh.wa.DefaultDialer(masterURL, nil)
 	if err != nil {
 		nh.outgoingConnectionsMutex.Unlock()
-		glog.Errorf("In ConnectToMaster: %v", err)
+		glog.Errorf("in ConnectToMaster: %v", err)
 		return
 	}
-	// defer nh.wa.Close(conn)
 	connObj, _ := nh.outgoingConnections.Append(att, conn)
 	nh.outgoingConnectionsMutex.Unlock()
-	// defer nh.CleanupOutgoingConnection(att)
 
-	glog.Infof("successfully conetcted to master, number of outgoing websockets: %d", nh.outgoingConnections.Len())
-
-	// cleanup := make(chan bool)
+	glog.Infof("successfully contented to master, number of outgoing websockets: %d", nh.outgoingConnections.Len())
 
 	// read/write for keeping websocket connection alive
 	go func(pconnObj *websocketactions.Connection) {
 		for {
 			time.Sleep(10 * time.Second)
 			if err := nh.wa.WritePingMessage(pconnObj); err != nil {
-				glog.Errorf("In WritePingMessage attributes: %v, error: %s", att, err.Error())
+				glog.Warningf("in WritePingMessage attributes: %v, reason: %s", att, err.Error())
 				pconnObj.Close()
 				return
-				// cleanup <- true
 			}
 		}
 	}(connObj)
-	// for {
-	if err := nh.WebsocketReceiveNotification(connObj); err != nil {
-		glog.Errorf("In ConnectToMaster. attributes: %s, error: %s", cautils.ObjectToString(att), err.Error())
-		// cleanup <- true
-		// break
-	}
-	// }
 
-	// <-cleanup
+	if err := nh.WebsocketReceiveNotification(connObj); err != nil {
+		glog.Warningf("in ConnectToMaster. attributes: %s, reason: %s", cautils.ObjectToString(att), err.Error())
+	}
 
 	nh.wa.Close(connObj)
 	if retry < 2 {
-		glog.Warningf("Disconnected from master with connection attributes: '%s', retrying: %d", cautils.ObjectToString(att), retry+1)
+		glog.Warningf("disconnected from master with connection attributes: '%s', retrying: %d", cautils.ObjectToString(att), retry+1)
 		nh.outgoingConnectionsMutex.Lock()
 		nh.outgoingConnections.Remove(notificationAtt)
 		nh.outgoingConnectionsMutex.Unlock()
 		nh.ConnectToMaster(notificationAtt, retry+1)
 	} else {
-		glog.Warningf("Disconnected from master with connection attributes: '%s', removing connection from list", cautils.ObjectToString(att))
+		glog.Warningf("disconnected from master with connection attributes: '%s', removing connection from list", cautils.ObjectToString(att))
 		nh.outgoingConnectionsMutex.Lock()
 		defer nh.outgoingConnectionsMutex.Unlock()
 
 		nh.CleanupOutgoingConnection(att)
 		if nh.outgoingConnections.Len() == 0 && nh.incomingConnections.Len() > 0 {
-			panic("Failed to connect to master: ")
+			panic(fmt.Sprintf("failed to connect to master: '%s'", cautils.ObjectToString(att)))
 		}
 	}
 }
