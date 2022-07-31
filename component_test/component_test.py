@@ -74,15 +74,7 @@ class ComponentTest(object):
     def get_container_master_url(self):
         master_ip = self.get_container_ip(container=self.master, network=self.network)
         return "http://{}:8002/v1/sendnotification".format(master_ip)
-
-    def get_backend_edge_url(self, notification: Notification):
-        edge_url = "ens.eudev2.cyberarmorsoft.com"
-        return "wss://{}/v1/waitfornotification?{}".format(edge_url, self.convert_dict_to_url(notification.target))
-
-    @staticmethod
-    def get_backend_master_url():
-        return "https://mns.eudev2.cyberarmorsoft.com/v1/sendnotification"
-
+  
     def run_client(self, url):
         self.client.append(self.connect_websocket(url))
 
@@ -155,31 +147,7 @@ class ComponentTest(object):
     @staticmethod
     def get_container_ip(container, network):
         return ComponentTest.inspect(container=container)['NetworkSettings']['Networks'][network.name]['IPAddress']
-    #
-    # def run(self):
-    #     """
-    #     setup:
-    #     1. run network
-    #     2. run master
-    #     3. run edge
-    #     4. run client (websocket to edge)
-    #
-    #     test:
-    #     1. send notification
-    #     2. receive notification from websocket
-    #
-    #     :return:
-    #     """
-    #     # setup
-    #     edge_url = self.get_backend_edge_url(self.notification[0])
-    #     master_url = self.get_backend_master_url()
-    #     self.run_client(url=edge_url)
-    #
-    #     # test
-    #     self.push_notification(master_url, self.notification[0])  # master
-    #     received = self.receive_notification(self.client[0])  # client
-    #     self.test_received_notification(received, self.notification[0])
-
+    
     def run_local(self):
         """
         setup:

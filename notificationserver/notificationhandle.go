@@ -3,11 +3,11 @@ package notificationserver
 import (
 	"encoding/json"
 	"fmt"
+	strutils "github.com/armosec/utils-go/str"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/url"
-	"notification-server/cautils"
 	"os"
 	"strings"
 	"sync"
@@ -92,7 +92,7 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string,
 		return
 	}
 
-	att := cautils.MergeSliceAndMap(MASTER_ATTRIBUTES, notificationAtt)
+	att := strutils.MergeSliceAndMap(RootAttributes, notificationAtt)
 	if len(att) == 0 {
 		att = notificationAtt
 	}
@@ -139,24 +139,24 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string,
 	}(connObj)
 
 	if err := nh.WebsocketReceiveNotification(connObj); err != nil {
-		glog.Warningf("in ConnectToMaster. attributes: %s, reason: %s", cautils.ObjectToString(att), err.Error())
+		glog.Warningf("in ConnectToMaster. attributes: %s, reason: %s", strutils.ObjectToString(att), err.Error())
 	}
 
 	nh.wa.Close(connObj)
 	if retry < 2 {
-		glog.Warningf("disconnected from master with connection attributes: '%s', retrying: %d", cautils.ObjectToString(att), retry+1)
+		glog.Warningf("disconnected from master with connection attributes: '%s', retrying: %d", strutils.ObjectToString(att), retry+1)
 		nh.outgoingConnectionsMutex.Lock()
 		nh.outgoingConnections.Remove(notificationAtt)
 		nh.outgoingConnectionsMutex.Unlock()
 		nh.ConnectToMaster(notificationAtt, retry+1)
 	} else {
-		glog.Warningf("disconnected from master with connection attributes: '%s', removing connection from list", cautils.ObjectToString(att))
+		glog.Warningf("disconnected from master with connection attributes: '%s', removing connection from list", strutils.ObjectToString(att))
 		nh.outgoingConnectionsMutex.Lock()
 		defer nh.outgoingConnectionsMutex.Unlock()
 
 		nh.CleanupOutgoingConnection(att)
 		if nh.outgoingConnections.Len() == 0 && nh.incomingConnections.Len() > 0 {
-			panic(fmt.Sprintf("failed to connect to master: '%s'", cautils.ObjectToString(att)))
+			panic(fmt.Sprintf("failed to connect to master: '%s'", strutils.ObjectToString(att)))
 		}
 	}
 }
@@ -184,7 +184,7 @@ func (nh *NotificationServer) RestAPINotificationHandler(w http.ResponseWriter, 
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	glog.Infof("REST API received message, attributes: %s", cautils.ObjectToString(notificationAtt.Target))
+	glog.Infof("REST API received message, attributes: %s", strutils.ObjectToString(notificationAtt.Target))
 	if notificationAtt.Target == nil || len(notificationAtt.Target) == 0 {
 		glog.Errorf("In RestAPINotificationHandler received empty notificationAtt.Target")
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -207,7 +207,7 @@ func (nh *NotificationServer) SendNotification(route map[string]string, notifica
 	ids := []int{}
 	errMsgs := []string{}
 	connections := nh.incomingConnections.Get(route)
-	glog.Infof("sending notification to: %v, number of connections: %d", cautils.ObjectToString(route), len(connections))
+	glog.Infof("sending notification to: %v, number of connections: %d", strutils.ObjectToString(route), len(connections))
 	if len(connections) == 0 {
 		return ids, nil
 	}
@@ -244,11 +244,11 @@ func (nh *NotificationServer) sendSingleNotification(conn *websocketactions.Conn
 			}
 		}
 	}()
-	glog.Infof("sending notification, attributes: %s, id: %d", cautils.ObjectToString(conn.GetAttributes()), conn.ID)
+	glog.Infof("sending notification, attributes: %s, id: %d", strutils.ObjectToString(conn.GetAttributes()), conn.ID)
 	err := nh.wa.WritePreparedMessage(conn, preparedMessage)
 	if err != nil {
 		nh.CleanupIncomeConnection(conn.ID)
-		e := fmt.Errorf("In sendSingleNotification %s, connection %d is not alive, error: %v", cautils.ObjectToString(conn.GetAttributes()), conn.ID, err)
+		e := fmt.Errorf("in sendSingleNotification %s, connection %d is not alive, error: %v", strutils.ObjectToString(conn.GetAttributes()), conn.ID, err)
 		glog.Errorf(e.Error())
 		return e
 	}
@@ -285,7 +285,7 @@ func (nh *NotificationServer) CleanupOutgoingConnection(notificationAtt map[stri
 	nh.outgoingConnections.Remove(notificationAtt)
 
 	// close all incoming connections related to this attributes
-	glog.Infof("Removing master connection. Removing all incoming connections with attributes: '%s'", cautils.ObjectToString(notificationAtt))
+	glog.Infof("Removing master connection. Removing all incoming connections with attributes: '%s'", strutils.ObjectToString(notificationAtt))
 	nh.incomingConnections.CloseConnections(nh.wa, notificationAtt)
 }
 

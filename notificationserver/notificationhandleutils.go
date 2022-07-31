@@ -1,7 +1,7 @@
 package notificationserver
 
 import (
-	"notification-server/cautils"
+	strutils "github.com/armosec/utils-go/str"
 	"os"
 
 	notifier "github.com/armosec/cluster-notifier-api-go/notificationserver"
@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	// MASTER_ATTRIBUTES attributes master is expecting
-	MASTER_ATTRIBUTES []string
+	// RootAttributes attributes the root component is expecting
+	RootAttributes []string
 	// MASTER_HOST -
 	MASTER_HOST string
 )
@@ -23,13 +23,9 @@ func SetupMasterInfo() {
 		return
 	}
 	MASTER_HOST = host
-	// if MASTER_ATTRIBUTES[len(MASTER_ATTRIBUTES)-1] == "" {
-	// 	cautils.RemoveIndexFromStringSlice(&MASTER_ATTRIBUTES, len(MASTER_ATTRIBUTES)-1)
-	// }
-	// if len(MASTER_ATTRIBUTES) == 0 {
-	MASTER_ATTRIBUTES = []string{notifier.TargetCustomer, "customer"} // agent uses customer
-	// }
-	glog.Infof("master host: %s, master attributes: %v", MASTER_HOST, cautils.ObjectToString(MASTER_ATTRIBUTES))
+	RootAttributes = []string{notifier.TargetCustomer, "customer"} // agent uses customer
+
+	glog.Infof("master host: %s, master attributes: %v", MASTER_HOST, strutils.ObjectToString(RootAttributes))
 }
 
 // IsMaster is server master or edge

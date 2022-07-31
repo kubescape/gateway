@@ -20,7 +20,7 @@ func NewNotificationServerMasterMock() *NotificationServer {
 // NewNotificationServerEdgeMock -
 func NewNotificationServerEdgeMock() *NotificationServer {
 	MASTER_HOST = "https://blabla"
-	MASTER_ATTRIBUTES = []string{"customer"}
+	RootAttributes = []string{"customer"}
 
 	return &NotificationServer{
 		wa:                  &websocketactions.WebsocketActionsMock{},

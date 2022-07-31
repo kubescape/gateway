@@ -1,8 +1,8 @@
 package notificationserver
 
 import (
+	strutils "github.com/armosec/utils-go/str"
 	"math/rand"
-	"notification-server/cautils"
 	"notification-server/notificationserver/websocketactions"
 	"sync"
 
@@ -40,7 +40,7 @@ func (cs *Connections) Remove(attributes map[string]string) {
 	slcLen := len(cs.connections)
 	for i := 0; i < slcLen; i++ {
 		if cs.connections[i].AttributesContained(attributes) {
-			glog.Infof("Removing connection from list. index: %d. attributes: %s, id: %d, list len: %d", i, cautils.ObjectToString(cs.connections[i].GetAttributes()), cs.connections[i].ID, len(cs.connections)-1)
+			glog.Infof("Removing connection from list. index: %d. attributes: %s, id: %d, list len: %d", i, strutils.ObjectToString(cs.connections[i].GetAttributes()), cs.connections[i].ID, len(cs.connections)-1)
 			if slcLen == 1 { //i is the only element in the slice so we need to remove this entry from the map
 				cs.connections = []*websocketactions.Connection{}
 			} else if i == slcLen-1 { // i is the last element in the slice so i+1 is out of range
@@ -61,7 +61,7 @@ func (cs *Connections) RemoveID(id int) {
 	slcLen := len(cs.connections)
 	for i := 0; i < slcLen; i++ {
 		if cs.connections[i].ID == id {
-			glog.Infof("Removing connection from list. index: %d. attributes: %v, id: %d, list len: %d", i, cautils.ObjectToString(cs.connections[i].GetAttributes()), cs.connections[i].ID, len(cs.connections)-1)
+			glog.Infof("Removing connection from list. index: %d. attributes: %v, id: %d, list len: %d", i, strutils.ObjectToString(cs.connections[i].GetAttributes()), cs.connections[i].ID, len(cs.connections)-1)
 			if slcLen == 1 { //i is the only element in the slice so we need to remove this entry from the map
 				cs.connections = []*websocketactions.Connection{}
 			} else if i == slcLen-1 { // i is the last element in the slice so i+1 is out of range

@@ -4,6 +4,8 @@ import (
 	"notification-server/notificationserver/websocketactions"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var ATTRIBUTES_MOCK = map[string]string{"customer": "test", "cluster": "yay"}
@@ -24,9 +26,7 @@ func TestGet(t *testing.T) {
 
 	att1 := ATTRIBUTES_MOCK
 	rtv1 := cs.Get(att1)
-	if len(rtv1) != 1 {
-		t.Errorf("%v", rtv1)
-	}
+	assert.Equal(t, 1, len(rtv1))
 
 	att2 := map[string]string{"customer": "test"}
 	rtv2 := cs.Get(att2)

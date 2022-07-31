@@ -11,9 +11,40 @@ import (
 )
 
 var (
-	CA_NOTIFICATION_SERVER_PORT    = "8002"
-	CA_NOTIFICATION_SERVER_WS_PORT = "8001"
+	PortRestAPI   = "8002"
+	PortWebsocket = "8001"
 )
+
+// SetupNotificationServer set up listening http servers
+func (ns *NotificationServer) SetupNotificationServer() {
+	if port, ok := os.LookupEnv("CA_NOTIFICATION_SERVER_WS_PORT"); ok {
+		PortWebsocket = port
+	}
+	if port, ok := os.LookupEnv("CA_NOTIFICATION_SERVER_PORT"); ok {
+		PortRestAPI = port
+	}
+	finish := make(chan bool)
+
+	server8002 := http.NewServeMux()
+	var h8002 = new(RegexpHandler)
+	r8002, _ := regexp.Compile(fmt.Sprintf("%s.*", notifier.PathRESTV1))
+	h8002.HandleFunc(r8002, ns.RestAPINotificationHandler)
+	server8002.Handle("/", h8002)
+	go func() {
+		glog.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", PortRestAPI), server8002))
+	}()
+
+	server8001 := http.NewServeMux()
+	var h8001 = new(RegexpHandler)
+	r8001, _ := regexp.Compile(fmt.Sprintf("%s.*", notifier.PathWebsocketV1))
+	h8001.HandleFunc(r8001, ns.WebsocketNotificationHandler)
+	server8001.Handle("/", h8001)
+	go func() {
+		glog.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", PortWebsocket), server8001))
+	}()
+
+	<-finish
+}
 
 type route struct {
 	pattern *regexp.Regexp
@@ -41,35 +72,4 @@ func (h *RegexpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	// no pattern matched; send 404 response
 	http.NotFound(w, r)
-}
-
-// SetupNotificationServer set up listening http servers
-func (ns *NotificationServer) SetupNotificationServer() {
-	if port, ok := os.LookupEnv("CA_NOTIFICATION_SERVER_WS_PORT"); ok {
-		CA_NOTIFICATION_SERVER_WS_PORT = port
-	}
-	if port, ok := os.LookupEnv("CA_NOTIFICATION_SERVER_PORT"); ok {
-		CA_NOTIFICATION_SERVER_PORT = port
-	}
-	finish := make(chan bool)
-
-	server8002 := http.NewServeMux()
-	var h8002 = new(RegexpHandler)
-	r8002, _ := regexp.Compile(fmt.Sprintf("%s.*", notifier.PathRESTV1))
-	h8002.HandleFunc(r8002, ns.RestAPINotificationHandler)
-	server8002.Handle("/", h8002)
-	go func() {
-		glog.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", CA_NOTIFICATION_SERVER_PORT), server8002))
-	}()
-
-	server8001 := http.NewServeMux()
-	var h8001 = new(RegexpHandler)
-	r8001, _ := regexp.Compile(fmt.Sprintf("%s.*", notifier.PathWebsocketV1))
-	h8001.HandleFunc(r8001, ns.WebsocketNotificationHandler)
-	server8001.Handle("/", h8001)
-	go func() {
-		glog.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", CA_NOTIFICATION_SERVER_WS_PORT), server8001))
-	}()
-
-	<-finish
 }
