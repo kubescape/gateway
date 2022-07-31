@@ -107,7 +107,7 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string,
 		return
 	}
 
-	masterURL := fmt.Sprintf("%s?", MASTER_HOST)
+	masterURL := fmt.Sprintf("%s?", RootHost)
 	amp := ""
 	for i, j := range att {
 		masterURL += amp
@@ -356,7 +356,7 @@ func (nh *NotificationServer) ParseURLPath(u *url.URL) (map[string]string, error
 	return att, nil
 }
 
-// UnmarshalMessage -
+// UnmarshalMessage we try to unmarshal a json format message and a bson format message
 func (nh *NotificationServer) UnmarshalMessage(message []byte) (*Notification, error) {
 	n := &Notification{}
 	var err error

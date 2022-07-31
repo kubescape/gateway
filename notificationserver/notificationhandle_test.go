@@ -19,7 +19,7 @@ func NewNotificationServerMasterMock() *NotificationServer {
 
 // NewNotificationServerEdgeMock -
 func NewNotificationServerEdgeMock() *NotificationServer {
-	MASTER_HOST = "https://blabla"
+	RootHost = "https://blabla"
 	RootAttributes = []string{"customer"}
 
 	return &NotificationServer{

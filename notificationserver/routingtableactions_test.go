@@ -30,25 +30,18 @@ func TestGet(t *testing.T) {
 
 	att2 := map[string]string{"customer": "test"}
 	rtv2 := cs.Get(att2)
-	if len(rtv2) != 1 {
-		t.Error("%v", rtv2)
-	}
+	assert.Equal(t, 1, len(rtv2))
 
 	att3 := map[string]string{"customer": "test", "cluster": "bla"}
 	rtv3 := cs.Get(att3)
-	if len(rtv3) != 0 {
-		t.Error("%v", rtv3)
-	}
+	assert.Equal(t, 0, len(rtv3))
 
 	att4 := map[string]string{"cluster": "yay"}
 	rtv4 := cs.Get(att4)
-	if len(rtv4) != 1 {
-		t.Error("%v", rtv4)
-	}
+	assert.Equal(t, 1, len(rtv4))
 
 	att5 := map[string]string{"customerGUID": "test"}
 	rtv5 := cs.Get(att5)
-	if len(rtv5) != 0 {
-		t.Error("%v", rtv5)
-	}
+	assert.Equal(t, 0, len(rtv5))
+
 }
