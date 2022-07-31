@@ -5,7 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/golang/glog"
+	logger "github.com/dwertent/go-logger"
+	"github.com/dwertent/go-logger/helpers"
 	"github.com/gorilla/websocket"
 )
 
@@ -85,7 +86,7 @@ func (wa *WebsocketActions) Close(conn *Connection) error {
 	defer conn.mutex.Unlock()
 	defer func() {
 		if err := recover(); err != nil {
-			glog.Errorf("recover while closing connection, reason: %v", err)
+			logger.L().Error("recover while closing connection", helpers.Interface("reason", err))
 		}
 	}()
 	err := conn.conn.Close()
@@ -104,7 +105,7 @@ func (wa *WebsocketActions) DefaultDialer(host string, requestHeader http.Header
 			return conn, res, err
 		}
 		i++
-		glog.Warningf("attempt: %d, error message: %s, waiting 5 seconds before retrying", i, err.Error())
+		logger.L().Warning("dialing websocket", helpers.Int("attempt", i), helpers.Error(err))
 		time.Sleep(time.Second * 5)
 	}
 

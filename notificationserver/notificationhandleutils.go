@@ -1,11 +1,13 @@
 package notificationserver
 
 import (
-	strutils "github.com/armosec/utils-go/str"
 	"os"
 
+	strutils "github.com/armosec/utils-go/str"
+	logger "github.com/dwertent/go-logger"
+	"github.com/dwertent/go-logger/helpers"
+
 	notifier "github.com/armosec/cluster-notifier-api-go/notificationserver"
-	"github.com/golang/glog"
 )
 
 var (
@@ -19,13 +21,13 @@ func SetupMasterInfo() {
 	// att, k1 := os.LookupEnv("MASTER_NOTIFICATION_SERVER_ATTRIBUTES")
 	host, k0 := os.LookupEnv("MASTER_NOTIFICATION_SERVER_HOST")
 	if !k0 {
-		glog.Infof("Running notification server as master")
+		logger.L().Info("Running notification server as master")
 		return
 	}
 	MASTER_HOST = host
 	RootAttributes = []string{notifier.TargetCustomer, "customer"} // agent uses customer
 
-	glog.Infof("master host: %s, master attributes: %v", MASTER_HOST, strutils.ObjectToString(RootAttributes))
+	logger.L().Info("master info", helpers.String("host", MASTER_HOST), helpers.String("attributes", strutils.ObjectToString(RootAttributes)))
 }
 
 // IsMaster is server master or edge

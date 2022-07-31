@@ -3,7 +3,6 @@ package notificationserver
 import (
 	"encoding/json"
 	"fmt"
-	strutils "github.com/armosec/utils-go/str"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -13,9 +12,12 @@ import (
 	"sync"
 	"time"
 
+	strutils "github.com/armosec/utils-go/str"
+	logger "github.com/dwertent/go-logger"
+	"github.com/dwertent/go-logger/helpers"
+
 	notifier "github.com/armosec/cluster-notifier-api-go/notificationserver"
 	"github.com/armosec/utils-k8s-go/armometadata"
-	"github.com/golang/glog"
 	"github.com/gorilla/websocket"
 	"gopkg.in/mgo.v2/bson"
 
@@ -34,7 +36,7 @@ type NotificationServer struct {
 func NewNotificationServer() *NotificationServer {
 	pathToConfig := os.Getenv("CA_CONFIG") // if empty, will load config from default path
 	if _, err := armometadata.LoadConfig(pathToConfig, true); err != nil {
-		glog.Warning(err.Error())
+		logger.L().Warning(err.Error())
 	}
 
 	SetupMasterInfo()
@@ -53,14 +55,14 @@ func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter
 	// ----------------------------------------------------- 1
 	// receive websocket connection from client
 	if r.Method != http.MethodGet {
-		glog.Errorf("Method not allowed")
+		logger.L().Error("Method not allowed")
 		http.Error(w, "Method not allowed", 405)
 		return
 	}
 
 	conn, notificationAtt, err := nh.AcceptWebsocketConnection(w, r)
 	if err != nil {
-		glog.Error(err)
+		logger.L().Error(err.Error())
 		http.Error(w, err.Error(), 400)
 		return
 	}
@@ -68,7 +70,7 @@ func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter
 	// ----------------------------------------------------- 2
 	// append new route
 	newConn, id := nh.incomingConnections.Append(notificationAtt, conn)
-	glog.Infof("accepting websocket connection. url query: %s, id: %d, number of incoming websockets: %d", r.URL.RawQuery, id, nh.incomingConnections.Len())
+	logger.L().Info("accepting websocket connection", helpers.String("url query", r.URL.RawQuery), helpers.Int("id", id), helpers.Int("number of incoming websockets", nh.incomingConnections.Len()))
 
 	// ----------------------------------------------------- 3
 	// register route in master if master configured
@@ -101,7 +103,7 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string,
 	// if connected
 	if cons := nh.outgoingConnections.Get(att); len(cons) > 0 {
 		nh.outgoingConnectionsMutex.Unlock()
-		glog.Infof("edge already connected to master, not creating new connection")
+		logger.L().Info("edge already connected to master, not creating new connection")
 		return
 	}
 
@@ -112,26 +114,26 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string,
 		masterURL += fmt.Sprintf("%s=%s", i, j)
 		amp = "&"
 	}
-	glog.Infof("connecting to master: %s", masterURL)
+	logger.L().Info("connecting to master", helpers.String("url", masterURL))
 
 	// connect to master
 	conn, _, err := nh.wa.DefaultDialer(masterURL, nil)
 	if err != nil {
 		nh.outgoingConnectionsMutex.Unlock()
-		glog.Errorf("in ConnectToMaster: %v", err)
+		logger.L().Error("in ConnectToMaster", helpers.Error(err))
 		return
 	}
 	connObj, _ := nh.outgoingConnections.Append(att, conn)
 	nh.outgoingConnectionsMutex.Unlock()
 
-	glog.Infof("successfully contented to master, number of outgoing websockets: %d", nh.outgoingConnections.Len())
+	logger.L().Info("successfully contented to master", helpers.Int("number of outgoing websockets", nh.outgoingConnections.Len()))
 
 	// read/write for keeping websocket connection alive
 	go func(pconnObj *websocketactions.Connection) {
 		for {
 			time.Sleep(10 * time.Second)
 			if err := nh.wa.WritePingMessage(pconnObj); err != nil {
-				glog.Warningf("in WritePingMessage attributes: %v, reason: %s", att, err.Error())
+				logger.L().Warning("in WritePingMessage", helpers.Interface(" attributes", att), helpers.Error(err))
 				pconnObj.Close()
 				return
 			}
@@ -139,18 +141,18 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string,
 	}(connObj)
 
 	if err := nh.WebsocketReceiveNotification(connObj); err != nil {
-		glog.Warningf("in ConnectToMaster. attributes: %s, reason: %s", strutils.ObjectToString(att), err.Error())
+		logger.L().Warning("in ConnectToMaster", helpers.String("attributes", strutils.ObjectToString(att)), helpers.Error(err))
 	}
 
 	nh.wa.Close(connObj)
 	if retry < 2 {
-		glog.Warningf("disconnected from master with connection attributes: '%s', retrying: %d", strutils.ObjectToString(att), retry+1)
+		logger.L().Warning("disconnected from master with connection", helpers.String("attributes", strutils.ObjectToString(att)), helpers.Int("retrying", retry+1))
 		nh.outgoingConnectionsMutex.Lock()
 		nh.outgoingConnections.Remove(notificationAtt)
 		nh.outgoingConnectionsMutex.Unlock()
 		nh.ConnectToMaster(notificationAtt, retry+1)
 	} else {
-		glog.Warningf("disconnected from master with connection attributes: '%s', removing connection from list", strutils.ObjectToString(att))
+		logger.L().Warning("disconnected from master with connection, removing connection from list", helpers.String("attributes", strutils.ObjectToString(att)))
 		nh.outgoingConnectionsMutex.Lock()
 		defer nh.outgoingConnectionsMutex.Unlock()
 
@@ -164,14 +166,14 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string,
 // RestAPINotificationHandler -
 func (nh *NotificationServer) RestAPINotificationHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		glog.Errorf("Method not allowed. returning 405")
+		logger.L().Error("Method not allowed. returning 405")
 		http.Error(w, "Method not allowed", 405)
 		return
 	}
 
 	readBuffer, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		glog.Errorf("In RestAPINotificationHandler ReadAll %v", err)
+		logger.L().Error("In RestAPINotificationHandler ReadAll", helpers.Error(err))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -180,19 +182,19 @@ func (nh *NotificationServer) RestAPINotificationHandler(w http.ResponseWriter, 
 	// get notificationID from message
 	notificationAtt, err := nh.UnmarshalMessage(readBuffer)
 	if err != nil {
-		glog.Errorf("In RestAPINotificationHandler UnmarshalMessage %v", err)
+		logger.L().Error("in RestAPINotificationHandler UnmarshalMessage", helpers.Error(err))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	glog.Infof("REST API received message, attributes: %s", strutils.ObjectToString(notificationAtt.Target))
+	logger.L().Info("in RestAPINotificationHandler", helpers.String("attributes", strutils.ObjectToString(notificationAtt.Target)))
 	if notificationAtt.Target == nil || len(notificationAtt.Target) == 0 {
-		glog.Errorf("In RestAPINotificationHandler received empty notificationAtt.Target")
+		logger.L().Error("in RestAPINotificationHandler received empty notificationAtt.Target")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	ids, err := nh.SendNotification(notificationAtt.Target, readBuffer, notificationAtt.SendSynchronicity)
 	if err != nil {
-		glog.Errorf("In RestAPINotificationHandler SendNotification %v, target: %v", err, notificationAtt.Target)
+		logger.L().Error("in RestAPINotificationHandler SendNotification", helpers.String("target", strutils.ObjectToString(notificationAtt.Target)), helpers.Error(err))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -207,7 +209,7 @@ func (nh *NotificationServer) SendNotification(route map[string]string, notifica
 	ids := []int{}
 	errMsgs := []string{}
 	connections := nh.incomingConnections.Get(route)
-	glog.Infof("sending notification to: %v, number of connections: %d", strutils.ObjectToString(route), len(connections))
+	logger.L().Info("sending notification", helpers.Interface("target", strutils.ObjectToString(route)), helpers.Int("number of connections", len(connections)))
 	if len(connections) == 0 {
 		return ids, nil
 	}
@@ -235,24 +237,25 @@ func (nh *NotificationServer) sendSingleNotification(conn *websocketactions.Conn
 		if err := recover(); err != nil {
 			if retry < 2 && strings.Contains(fmt.Sprintf("%v", err), "concurrent write to websocket connection") {
 				timeWait := time.Duration(rand.Intn(120)) * time.Millisecond
-				glog.Errorf("recover sendSingleNotification, connection %d is not alive, error: %v, retry: %d, retrying in: %s", conn.ID, err, retry+1, timeWait.String())
+
+				logger.L().Error("recover sendSingleNotification, connection is not alive", helpers.Int("id", conn.ID), helpers.Interface("reason", err), helpers.Int("retry", retry+1), helpers.String("retrying in", timeWait.String()))
 				time.Sleep(timeWait)
 				nh.sendSingleNotification(conn, preparedMessage, retry+1)
 			} else {
-				glog.Errorf("recover sendSingleNotification, connection %d is not alive, error: %v, closing connection", conn.ID, err)
+				logger.L().Error("recover sendSingleNotification, connection is not alive", helpers.Int("id", conn.ID), helpers.Interface("reason", err))
 				nh.wa.Close(conn)
 			}
 		}
 	}()
-	glog.Infof("sending notification, attributes: %s, id: %d", strutils.ObjectToString(conn.GetAttributes()), conn.ID)
+	logger.L().Info("sending notification", helpers.String("attributes", strutils.ObjectToString(conn.GetAttributes())), helpers.Int("id", conn.ID))
 	err := nh.wa.WritePreparedMessage(conn, preparedMessage)
 	if err != nil {
 		nh.CleanupIncomeConnection(conn.ID)
 		e := fmt.Errorf("in sendSingleNotification %s, connection %d is not alive, error: %v", strutils.ObjectToString(conn.GetAttributes()), conn.ID, err)
-		glog.Errorf(e.Error())
+		logger.L().Error(e.Error())
 		return e
 	}
-	// glog.Infof("notification sent successfully, attributes: %v, id: %d", conn.GetAttributes(), conn.ID)
+	// logger.L().Info("notification sent successfully, attributes: %v, id: %d", conn.GetAttributes(), conn.ID)
 	return nil
 }
 
@@ -285,7 +288,7 @@ func (nh *NotificationServer) CleanupOutgoingConnection(notificationAtt map[stri
 	nh.outgoingConnections.Remove(notificationAtt)
 
 	// close all incoming connections related to this attributes
-	glog.Infof("Removing master connection. Removing all incoming connections with attributes: '%s'", strutils.ObjectToString(notificationAtt))
+	logger.L().Info("Removing master connection. Removing all incoming connections", helpers.String("attributes", strutils.ObjectToString(notificationAtt)))
 	nh.incomingConnections.CloseConnections(nh.wa, notificationAtt)
 }
 
@@ -297,7 +300,7 @@ func (nh *NotificationServer) WebsocketReceiveNotification(connObj *websocketact
 		if err != nil {
 			return err
 		}
-		// glog.Infof("In WebsocketReceiveNotification received msgType: %d. (text=1, close=8, ping=9)", msgType)
+		// logger.L().Info("In WebsocketReceiveNotification received msgType: %d. (text=1, close=8, ping=9)", msgType)
 		switch msgType {
 		case websocket.CloseMessage:
 			return fmt.Errorf("In WebsocketReceiveNotification websocket received CloseMessage")
@@ -311,22 +314,22 @@ func (nh *NotificationServer) WebsocketReceiveNotification(connObj *websocketact
 		case websocket.BinaryMessage:
 
 		default:
-			glog.Warningf("unknown message type")
+			logger.L().Warning("unknown message type")
 			return nil
 		}
 		// get notificationID from message
 		n, err := nh.UnmarshalMessage(message)
 		if err != nil {
-			glog.Errorf("In WebsocketReceiveNotification UnmarshalMessage error: %v", err)
+			logger.L().Error("In WebsocketReceiveNotification UnmarshalMessage", helpers.Error(err))
 			return fmt.Errorf("In WebsocketReceiveNotification UnmarshalMessage error: %v", err)
 		}
 		if n.Target == nil || len(n.Target) == 0 {
-			glog.Errorf("In WebsocketReceiveNotification received empty notification.Target")
+			logger.L().Error("In WebsocketReceiveNotification received empty notification.Target")
 			return fmt.Errorf("In WebsocketReceiveNotification received empty notification.Target")
 		}
 		// send message
 		if _, err := nh.SendNotification(n.Target, message, n.SendSynchronicity); err != nil {
-			glog.Errorf("In WebsocketReceiveNotification SendNotification error: %v", err)
+			logger.L().Error("In WebsocketReceiveNotification SendNotification", helpers.Error(err))
 			return fmt.Errorf("In WebsocketReceiveNotification SendNotification error: %v", err)
 		}
 	}

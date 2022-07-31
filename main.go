@@ -6,13 +6,12 @@ import (
 	"os"
 
 	"github.com/armosec/utils-k8s-go/probes"
-
-	"github.com/golang/glog"
+	logger "github.com/dwertent/go-logger"
+	"github.com/dwertent/go-logger/helpers"
 )
 
 func main() {
 	flag.Parse()
-	flag.Set("alsologtostderr", "1")
 
 	displayBuildTag()
 
@@ -26,5 +25,5 @@ func main() {
 
 // DisplayBuildTag display on startup
 func displayBuildTag() {
-	glog.Infof("Image version: %s", os.Getenv("RELEASE"))
+	logger.L().Info("Image version", helpers.String("release", os.Getenv("RELEASE")))
 }

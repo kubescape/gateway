@@ -44,7 +44,7 @@ func HTTPRequestMock() *http.Request {
 // 	nsm.WebsocketNotificationHandler(nil, r)
 
 // 	if len(nsm.outgoingConnections.connections) > 0 || len(nsm.incomingConnections.connections) > 0 {
-// 		t.Errorf("connections where not removed")
+// 		t.Error("connections where not removed")
 // 	}
 // }
 
@@ -55,10 +55,10 @@ func TestParseURLQuery(t *testing.T) {
 		t.Error(err)
 	}
 	if len(att) != 2 {
-		t.Errorf("len(att) != 2")
+		t.Error("len(att) != 2")
 	}
 	if att["customer"] != "test" || att["cluster"] != "kube" {
-		t.Errorf("wrong key value")
+		t.Error("wrong key value")
 	}
 }
 
@@ -69,9 +69,9 @@ func TestParseURLPath(t *testing.T) {
 		t.Error(err)
 	}
 	if len(att) != 1 {
-		t.Errorf("len(att) != 1")
+		t.Error("len(att) != 1")
 	}
 	if att["my-id"] != "" {
-		t.Errorf("wrong key value")
+		t.Error("wrong key value")
 	}
 }

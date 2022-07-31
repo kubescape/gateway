@@ -7,7 +7,8 @@ import (
 	"regexp"
 
 	notifier "github.com/armosec/cluster-notifier-api-go/notificationserver"
-	"github.com/golang/glog"
+	logger "github.com/dwertent/go-logger"
+	"github.com/dwertent/go-logger/helpers"
 )
 
 var (
@@ -31,7 +32,7 @@ func (ns *NotificationServer) SetupNotificationServer() {
 	h8002.HandleFunc(r8002, ns.RestAPINotificationHandler)
 	server8002.Handle("/", h8002)
 	go func() {
-		glog.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", PortRestAPI), server8002))
+		logger.L().Fatal("", helpers.Error(http.ListenAndServe(fmt.Sprintf(":%s", PortRestAPI), server8002)))
 	}()
 
 	server8001 := http.NewServeMux()
@@ -40,7 +41,7 @@ func (ns *NotificationServer) SetupNotificationServer() {
 	h8001.HandleFunc(r8001, ns.WebsocketNotificationHandler)
 	server8001.Handle("/", h8001)
 	go func() {
-		glog.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", PortWebsocket), server8001))
+		logger.L().Fatal("", helpers.Error(http.ListenAndServe(fmt.Sprintf(":%s", PortWebsocket), server8001)))
 	}()
 
 	<-finish
