@@ -15,8 +15,7 @@ import (
 // Connections -
 type Connections struct {
 	connections []*websocketactions.Connection
-	// attributes   map[string][]*Connection
-	mutex *sync.RWMutex
+	mutex       *sync.RWMutex
 }
 
 // NewConnectionsObj -

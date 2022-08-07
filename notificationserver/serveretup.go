@@ -18,10 +18,10 @@ var (
 
 // SetupNotificationServer set up listening http servers
 func (ns *NotificationServer) SetupNotificationServer() {
-	if port, ok := os.LookupEnv("CA_NOTIFICATION_SERVER_WS_PORT"); ok {
+	if port, ok := os.LookupEnv(NotificationServerWebsocketPortEnvironmentVariable); ok {
 		PortWebsocket = port
 	}
-	if port, ok := os.LookupEnv("CA_NOTIFICATION_SERVER_PORT"); ok {
+	if port, ok := os.LookupEnv(NotificationServerRestApiPortEnvironmentVariable); ok {
 		PortRestAPI = port
 	}
 	finish := make(chan bool)

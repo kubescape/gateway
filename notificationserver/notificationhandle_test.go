@@ -37,17 +37,6 @@ func HTTPRequestMock() *http.Request {
 	return r
 }
 
-// func TestWebsocketNotificationHandlerMaster(t *testing.T) {
-// 	nsm := NewNotificationServerMasterMock()
-
-// 	r := HTTPRequestMock()
-// 	nsm.WebsocketNotificationHandler(nil, r)
-
-// 	if len(nsm.outgoingConnections.connections) > 0 || len(nsm.incomingConnections.connections) > 0 {
-// 		t.Error("connections where not removed")
-// 	}
-// }
-
 func TestParseURLQuery(t *testing.T) {
 	ns := NewNotificationServerEdgeMock()
 	att, err := ns.ParseURLPath(&url.URL{RawQuery: "customer=test&cluster=kube"})

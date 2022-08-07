@@ -34,7 +34,7 @@ type NotificationServer struct {
 
 // NewNotificationServer -
 func NewNotificationServer() *NotificationServer {
-	pathToConfig := os.Getenv("CA_CONFIG") // if empty, will load config from default path
+	pathToConfig := os.Getenv(ConfigEnvironmentVariable) // if empty, will load config from default path
 	if _, err := armometadata.LoadConfig(pathToConfig, true); err != nil {
 		logger.L().Warning(err.Error())
 	}
@@ -79,11 +79,7 @@ func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter
 
 	// ----------------------------------------------------- 4
 	// Websocket read messages
-	if err := nh.WebsocketReceiveNotification(newConn); err != nil {
-		if !strings.Contains(err.Error(), "CloseMessage") {
-			// nh.wa.Close(conn)
-		}
-	}
+	nh.WebsocketReceiveNotification(newConn)
 	nh.CleanupIncomeConnection(id)
 	nh.wa.Close(newConn)
 }
@@ -133,7 +129,7 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string,
 		for {
 			time.Sleep(10 * time.Second)
 			if err := nh.wa.WritePingMessage(pconnObj); err != nil {
-				logger.L().Warning("in WritePingMessage", helpers.Interface(" attributes", att), helpers.Error(err))
+				logger.L().Warning("in WritePingMessage", helpers.Interface("attributes", att), helpers.Error(err))
 				pconnObj.Close()
 				return
 			}
@@ -255,7 +251,6 @@ func (nh *NotificationServer) sendSingleNotification(conn *websocketactions.Conn
 		logger.L().Error(e.Error())
 		return e
 	}
-	// logger.L().Info("notification sent successfully, attributes: %v, id: %d", conn.GetAttributes(), conn.ID)
 	return nil
 }
 
@@ -300,7 +295,6 @@ func (nh *NotificationServer) WebsocketReceiveNotification(connObj *websocketact
 		if err != nil {
 			return err
 		}
-		// logger.L().Info("In WebsocketReceiveNotification received msgType: %d. (text=1, close=8, ping=9)", msgType)
 		switch msgType {
 		case websocket.CloseMessage:
 			return fmt.Errorf("In WebsocketReceiveNotification websocket received CloseMessage")

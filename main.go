@@ -25,5 +25,5 @@ func main() {
 
 // DisplayBuildTag display on startup
 func displayBuildTag() {
-	logger.L().Info("Image version", helpers.String("release", os.Getenv("RELEASE")))
+	logger.L().Info("Image version", helpers.String("release", os.Getenv(notificationserver.ReleaseBuildTagEnvironmentVariable)))
 }

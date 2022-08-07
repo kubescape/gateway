@@ -1,6 +1,6 @@
 # Maintainers
 
-The following table lists ARMO projects maintainers 
+The following table lists projects maintainers 
 
 | Name | GitHub | Email | Organization | Role | Added/Renewed On |
 | --- | --- | --- | --- | --- | --- |
