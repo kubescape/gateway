@@ -1,0 +1,88 @@
+basePath: /
+consumes:
+- application/json
+definitions:
+  Notification:
+    description: Notification is a notification passed between the Gateway servers
+    properties:
+      notification:
+        description: Body of the notification
+        example:
+          commands:
+          - CommandName: kubescapeScan
+            args:
+              scanV1:
+                excludeNamespaces:
+                - kube-system
+                submit: true
+        type: object
+        x-go-name: Notification
+      sendSynchronicity:
+        default: false
+        description: |-
+          Whether to send the message synchronously
+
+          If `true`, waits for the message to be sent, else the message is sent asynchronously.
+        example: true
+        type: boolean
+        x-go-name: SendSynchronicity
+      target:
+        additionalProperties:
+          type: string
+        description: |-
+          Target for the notification
+
+          Describes attributes of the target that should receive the notification
+        example:
+          cluster: minikube
+          component: websocket
+          customerGUID: b5b28ef9-d297-4a93-aec4-22de5b21e802
+        type: object
+        x-go-name: Target
+    required:
+    - target
+    type: object
+    x-go-package: github.com/armosec/cluster-notifier-api-go/notificationserver
+  notificationIDs:
+    description: |-
+      The IDs of the sent notifications
+
+      Example: [1, 2, 3]
+    items:
+      format: int64
+      type: integer
+    title: Notification IDs
+    type: array
+    x-go-package: github.com/kubescape/gateway/docs
+info:
+  description: The Kubescape Gateway listens and routes messages to its intended recipients.
+  title: Kubescape Gateway
+  version: 1.0.0
+paths:
+  /v1/sendnotification:
+    post:
+      description: Send a notification to the listeners
+      operationId: postSendNotification
+      parameters:
+      - in: body
+        name: Body
+        schema:
+          $ref: '#/definitions/Notification'
+      responses:
+        "200":
+          $ref: '#/responses/postSendNotificationOk'
+        "400":
+          $ref: '#/responses/postSendNotificationBadRequest'
+produces:
+- text/plain
+responses:
+  postSendNotificationBadRequest:
+    description: A request to send a notification is malformed
+  postSendNotificationOk:
+    description: A request to send a notification has been successfully received.
+    schema:
+      $ref: '#/definitions/notificationIDs'
+schemes:
+- https
+- http
+swagger: "2.0"
