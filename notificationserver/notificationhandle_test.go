@@ -4,8 +4,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"notification-server/notificationserver/websocketactions"
 	"testing"
+
+	"github.com/kubescape/gateway/notificationserver/websocketactions"
 )
 
 // NewNotificationServerMasterMock -

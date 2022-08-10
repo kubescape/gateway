@@ -1,4 +1,4 @@
-module notification-server
+module github.com/kubescape/gateway
 
 go 1.18
 

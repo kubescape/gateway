@@ -21,7 +21,7 @@ import (
 	"github.com/gorilla/websocket"
 	"gopkg.in/mgo.v2/bson"
 
-	"notification-server/notificationserver/websocketactions"
+	"github.com/kubescape/gateway/notificationserver/websocketactions"
 )
 
 // NotificationServer -

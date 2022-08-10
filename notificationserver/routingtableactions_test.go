@@ -1,9 +1,10 @@
 package notificationserver
 
 import (
-	"notification-server/notificationserver/websocketactions"
 	"sync"
 	"testing"
+
+	"github.com/kubescape/gateway/notificationserver/websocketactions"
 
 	"github.com/stretchr/testify/assert"
 )

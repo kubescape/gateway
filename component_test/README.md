@@ -10,5 +10,5 @@
    ```
 3. Execute test
    ```
-   test_env/bin/python component_test.py --image notification-server:test
+   test_env/bin/python component_test.py --image gateway:test
    ```

@@ -2,7 +2,7 @@
 set -x
 
 if [ -z "$IMAGE_NAME" ]; then
-    export IMAGE_NAME="notification-server"
+    export IMAGE_NAME="gateway"
 fi
 
 if [ -z "$IMAGE_TAG" ]; then

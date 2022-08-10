@@ -2,8 +2,9 @@ package notificationserver
 
 import (
 	"math/rand"
-	"notification-server/notificationserver/websocketactions"
 	"sync"
+
+	"github.com/kubescape/gateway/notificationserver/websocketactions"
 
 	strutils "github.com/armosec/utils-go/str"
 	logger "github.com/dwertent/go-logger"

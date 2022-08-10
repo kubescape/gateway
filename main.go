@@ -2,8 +2,9 @@ package main
 
 import (
 	"flag"
-	"notification-server/notificationserver"
 	"os"
+
+	"github.com/kubescape/gateway/notificationserver"
 
 	"github.com/armosec/utils-k8s-go/probes"
 	logger "github.com/dwertent/go-logger"
