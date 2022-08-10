@@ -12,7 +12,7 @@ ADD . .
 RUN apk add git
 
 WORKDIR /work
-RUN go build -o build/notification
+RUN go build -o build/gateway
 
 FROM alpine
 
@@ -20,7 +20,7 @@ RUN addgroup -S ks && adduser -S ks -G ks
 USER ks
 WORKDIR /home/ks/
 
-COPY --from=builder /work/build/notification /usr/bin/notification
+COPY --from=builder /work/build/gateway /usr/bin/gateway
 ENV RELEASE=$image_version
 
-ENTRYPOINT ["notification"]
+ENTRYPOINT ["gateway"]
