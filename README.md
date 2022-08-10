@@ -14,4 +14,4 @@ When broadcasting a message, the message must contain the attributes to whom it 
 * `CA_NOTIFICATION_SERVER_WS_PORT`: websocket port (default `8001`)
 * `CA_NOTIFICATION_SERVER_PORT`: restAPI port (default `8002`)
 
-checkout notificationserver/environmentvariables.go
+checkout notificationserver/environmentvariables.go 
