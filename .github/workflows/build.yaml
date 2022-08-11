@@ -3,6 +3,9 @@ name: build
 on:
   push:
     branches: [ master ]
+    paths-ignore:
+      # Skip the workflow if only Markdown files changed
+      - '**.md'
 jobs:
   test:
     name: Create cross-platform release build, tag and upload binaries
