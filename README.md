@@ -21,7 +21,7 @@ You can learn more about the API using one of the provided interactive OpenAPI U
 
 
 ## Supported environment variables
-* `CA_NOTIFICATION_SERVER_WS_PORT`: websocket port (default `8001`)
-* `CA_NOTIFICATION_SERVER_PORT`: restAPI port (default `8002`)
+* `WEBSOCKET_PORT`: websocket port (default `8001`)
+* `HTTP_PORT`: restAPI port (default `8002`)
 
 For more details on environment variables, check out notificationserver/environmentvariables.go.

@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	logger "github.com/dwertent/go-logger"
-	"github.com/dwertent/go-logger/helpers"
 	"github.com/gorilla/websocket"
+	logger "github.com/kubescape/go-logger"
+	"github.com/kubescape/go-logger/helpers"
 )
 
 var upgrader = websocket.Upgrader{
@@ -24,7 +24,7 @@ type IWebsocketActions interface {
 	WritePreparedMessage(conn *Connection, preparedMessage *websocket.PreparedMessage) error
 	ReadMessage(conn *Connection) (int, []byte, error)
 	Close(conn *Connection) error
-	DefaultDialer(host string, requestHeader http.Header) (*websocket.Conn, *http.Response, error)
+	DefaultDialer(host string) (*websocket.Conn, *http.Response, error)
 }
 
 // WebsocketActions -
@@ -94,7 +94,7 @@ func (wa *WebsocketActions) Close(conn *Connection) error {
 }
 
 // DefaultDialer -
-func (wa *WebsocketActions) DefaultDialer(host string, requestHeader http.Header) (*websocket.Conn, *http.Response, error) {
+func (wa *WebsocketActions) DefaultDialer(host string) (*websocket.Conn, *http.Response, error) {
 	i := 0
 	for {
 		conn, res, err := websocket.DefaultDialer.Dial(host, nil)
