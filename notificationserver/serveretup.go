@@ -2,6 +2,7 @@ package notificationserver
 
 import (
 	"fmt"
+	"github.com/kubescape/gateway/docs"
 	"net/http"
 	"os"
 	"regexp"
@@ -16,7 +17,7 @@ var (
 	PortWebsocket = "8001"
 )
 
-// SetupNotificationServer set up listening http servers
+// SetupNotificationServer sets up listening HTTP servers
 func (ns *NotificationServer) SetupNotificationServer() {
 	if port, ok := os.LookupEnv(NotificationServerWebsocketPortEnvironmentVariable); ok {
 		PortWebsocket = port
@@ -31,6 +32,10 @@ func (ns *NotificationServer) SetupNotificationServer() {
 	r8002, _ := regexp.Compile(fmt.Sprintf("%s.*", notifier.PathRESTV1))
 	h8002.HandleFunc(r8002, ns.RestAPINotificationHandler)
 	server8002.Handle("/", h8002)
+
+	openAPIHandler := docs.NewOpenAPIUIHandler()
+	server8002.Handle(docs.OpenAPIV2Prefix, openAPIHandler)
+
 	go func() {
 		logger.L().Fatal("", helpers.Error(http.ListenAndServe(fmt.Sprintf(":%s", PortRestAPI), server8002)))
 	}()
