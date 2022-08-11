@@ -20,7 +20,7 @@ var (
 func SetupMasterInfo() {
 	host, k0 := os.LookupEnv(MasterGatewayHostEnvironmentVariable)
 	if !k0 {
-		logger.L().Info("Running notification server as master")
+		logger.L().Info("Running Gateway as master")
 		return
 	}
 	RootHost = host
@@ -29,7 +29,7 @@ func SetupMasterInfo() {
 	logger.L().Info("master info", helpers.String("host", RootHost), helpers.String("attributes", strutils.ObjectToString(RootAttributes)))
 }
 
-// IsMaster is server master or edge
+// IsMaster is Gateway master or edge
 func IsMaster() bool {
 	return RootHost == ""
 }

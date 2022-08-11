@@ -17,8 +17,8 @@ var (
 	PortWebsocket = "8001"
 )
 
-// SetupNotificationServer sets up listening HTTP servers
-func (ns *Gateway) SetupNotificationServer() {
+// SetupAndServe configures the HTTP servers and makes them serve incoming requests
+func (ns *Gateway) SetupAndServe() {
 	if port, ok := os.LookupEnv(GatewayWebsocketPortEnvironmentVariable); ok {
 		PortWebsocket = port
 	}
@@ -27,26 +27,26 @@ func (ns *Gateway) SetupNotificationServer() {
 	}
 	finish := make(chan bool)
 
-	server8002 := http.NewServeMux()
-	var h8002 = new(RegexpHandler)
-	r8002, _ := regexp.Compile(fmt.Sprintf("%s.*", notifier.PathRESTV1))
-	h8002.HandleFunc(r8002, ns.RestAPINotificationHandler)
-	server8002.Handle("/", h8002)
+	restAPIServer := http.NewServeMux()
+	var restAPIHandler = new(RegexpHandler)
+	restAPIRoute, _ := regexp.Compile(fmt.Sprintf("%s.*", notifier.PathRESTV1))
+	restAPIHandler.HandleFunc(restAPIRoute, ns.RestAPINotificationHandler)
+	restAPIServer.Handle("/", restAPIHandler)
 
 	openAPIHandler := docs.NewOpenAPIUIHandler()
-	server8002.Handle(docs.OpenAPIV2Prefix, openAPIHandler)
+	restAPIServer.Handle(docs.OpenAPIV2Prefix, openAPIHandler)
 
 	go func() {
-		logger.L().Fatal("", helpers.Error(http.ListenAndServe(fmt.Sprintf(":%s", PortRestAPI), server8002)))
+		logger.L().Fatal("", helpers.Error(http.ListenAndServe(fmt.Sprintf(":%s", PortRestAPI), restAPIServer)))
 	}()
 
-	server8001 := http.NewServeMux()
-	var h8001 = new(RegexpHandler)
-	r8001, _ := regexp.Compile(fmt.Sprintf("%s.*", notifier.PathWebsocketV1))
-	h8001.HandleFunc(r8001, ns.WebsocketNotificationHandler)
-	server8001.Handle("/", h8001)
+	websocketServer := http.NewServeMux()
+	var websocketHandler = new(RegexpHandler)
+	websocketRoute, _ := regexp.Compile(fmt.Sprintf("%s.*", notifier.PathWebsocketV1))
+	websocketHandler.HandleFunc(websocketRoute, ns.WebsocketNotificationHandler)
+	websocketServer.Handle("/", websocketHandler)
 	go func() {
-		logger.L().Fatal("", helpers.Error(http.ListenAndServe(fmt.Sprintf(":%s", PortWebsocket), server8001)))
+		logger.L().Fatal("", helpers.Error(http.ListenAndServe(fmt.Sprintf(":%s", PortWebsocket), websocketServer)))
 	}()
 
 	<-finish

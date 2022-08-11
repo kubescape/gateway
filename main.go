@@ -20,9 +20,9 @@ func main() {
 	isReadinessReady := false
 	go probes.InitReadinessV1(&isReadinessReady)
 
-	ns := notificationserver.NewGateway()
+	gateway := notificationserver.NewGateway()
 	isReadinessReady = true
-	ns.SetupNotificationServer()
+	gateway.SetupAndServe()
 }
 
 // DisplayBuildTag display on startup
