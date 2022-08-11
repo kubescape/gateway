@@ -13,20 +13,22 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Connections -
+// Connections manages the open websocket connections.
+// It acts as a routing table that routes requests to matching connections by
+// the attributes provided in requests
 type Connections struct {
 	connections []*websocketactions.Connection
 	mutex       *sync.RWMutex
 }
 
-// NewConnectionsObj -
+// NewConnectionsObj creates a new Connections object
 func NewConnectionsObj() *Connections {
 	return &Connections{
 		mutex: &sync.RWMutex{},
 	}
 }
 
-// Append -
+// Append appends a given connection with provided attributes to the current connections
 func (cs *Connections) Append(attributes map[string]string, conn *websocket.Conn) (*websocketactions.Connection, int) {
 	id := rand.Int()
 	connection := websocketactions.NewConnection(conn, id, attributes)
@@ -36,7 +38,7 @@ func (cs *Connections) Append(attributes map[string]string, conn *websocket.Conn
 	return connection, id
 }
 
-// Remove from routing table
+// Remove removes a connection with given attributes from the routing table
 func (cs *Connections) Remove(attributes map[string]string) {
 	cs.mutex.Lock()
 	slcLen := len(cs.connections)
@@ -57,7 +59,7 @@ func (cs *Connections) Remove(attributes map[string]string) {
 	cs.mutex.Unlock()
 }
 
-// RemoveID by id from routing table
+// RemoveID removes a connection with a given ID from the routing table
 func (cs *Connections) RemoveID(id int) {
 	cs.mutex.Lock()
 	slcLen := len(cs.connections)
@@ -78,7 +80,7 @@ func (cs *Connections) RemoveID(id int) {
 	cs.mutex.Unlock()
 }
 
-// Get from routing table
+// Get retrieves a connection with given attributes from the routing table
 func (cs *Connections) Get(attributes map[string]string) []*websocketactions.Connection {
 	conns := []*websocketactions.Connection{}
 	cs.mutex.RLocker().Lock()
@@ -91,7 +93,7 @@ func (cs *Connections) Get(attributes map[string]string) []*websocketactions.Con
 	return conns
 }
 
-// Len list length
+// Len returns the number of the currently managed connections
 func (cs *Connections) Len() int {
 	cs.mutex.RLocker().Lock()
 	l := len(cs.connections)
@@ -99,7 +101,7 @@ func (cs *Connections) Len() int {
 	return l
 }
 
-// CloseConnections close all connections of set of attributes
+// CloseConnections closes all connections that have a set of provided attributes
 func (cs *Connections) CloseConnections(wa websocketactions.IWebsocketActions, attributes map[string]string) {
 	conns := cs.Get(attributes)
 	for i := range conns {

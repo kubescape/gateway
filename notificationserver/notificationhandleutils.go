@@ -17,6 +17,7 @@ var (
 	RootHost string
 )
 
+// SetupMasterInfo sets up the info about the Master Gateway
 func SetupMasterInfo() {
 	host, k0 := os.LookupEnv(MasterGatewayHostEnvironmentVariable)
 	if !k0 {
@@ -29,7 +30,7 @@ func SetupMasterInfo() {
 	logger.L().Info("master info", helpers.String("host", RootHost), helpers.String("attributes", strutils.ObjectToString(RootAttributes)))
 }
 
-// IsMaster is Gateway master or edge
+// IsMaster checks if the current Gateway instance is a Master or an Edge
 func IsMaster() bool {
 	return RootHost == ""
 }

@@ -25,7 +25,7 @@ func main() {
 	gateway.SetupAndServe()
 }
 
-// DisplayBuildTag display on startup
+// DisplayBuildTag outputs the bulid tag of the current release
 func displayBuildTag() {
 	logger.L().Info("Image version", helpers.String("release", os.Getenv(notificationserver.ReleaseBuildTagEnvironmentVariable)))
 }
