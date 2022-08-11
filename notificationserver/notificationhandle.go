@@ -80,7 +80,7 @@ func (nh *Gateway) WebsocketNotificationHandler(w http.ResponseWriter, r *http.R
 	// ----------------------------------------------------- 4
 	// Websocket read messages
 	nh.WebsocketReceiveNotification(newConn)
-	nh.CleanupIncomeConnection(id)
+	nh.CleanupIncomingConnection(id)
 	nh.wa.Close(newConn)
 }
 
@@ -246,7 +246,7 @@ func (nh *Gateway) sendSingleNotification(conn *websocketactions.Connection, pre
 	logger.L().Info("sending notification", helpers.String("attributes", strutils.ObjectToString(conn.GetAttributes())), helpers.Int("id", conn.ID))
 	err := nh.wa.WritePreparedMessage(conn, preparedMessage)
 	if err != nil {
-		nh.CleanupIncomeConnection(conn.ID)
+		nh.CleanupIncomingConnection(conn.ID)
 		e := fmt.Errorf("in sendSingleNotification %s, connection %d is not alive, error: %v", strutils.ObjectToString(conn.GetAttributes()), conn.ID, err)
 		logger.L().Error(e.Error())
 		return e
@@ -271,8 +271,8 @@ func (nh *Gateway) AcceptWebsocketConnection(w http.ResponseWriter, r *http.Requ
 
 }
 
-// CleanupIncomeConnection - cleanup one connection with matching id
-func (nh *Gateway) CleanupIncomeConnection(id int) {
+// CleanupIncomingConnection - cleanup one connection with matching id
+func (nh *Gateway) CleanupIncomingConnection(id int) {
 	// remove connection from list
 	nh.incomingConnections.RemoveID(id)
 }
