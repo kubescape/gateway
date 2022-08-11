@@ -18,11 +18,11 @@ var (
 )
 
 // SetupNotificationServer sets up listening HTTP servers
-func (ns *NotificationServer) SetupNotificationServer() {
-	if port, ok := os.LookupEnv(NotificationServerWebsocketPortEnvironmentVariable); ok {
+func (ns *Gateway) SetupNotificationServer() {
+	if port, ok := os.LookupEnv(GatewayWebsocketPortEnvironmentVariable); ok {
 		PortWebsocket = port
 	}
-	if port, ok := os.LookupEnv(NotificationServerRestApiPortEnvironmentVariable); ok {
+	if port, ok := os.LookupEnv(GatewayRestApiPortEnvironmentVariable); ok {
 		PortRestAPI = port
 	}
 	finish := make(chan bool)

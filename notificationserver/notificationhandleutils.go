@@ -18,7 +18,7 @@ var (
 )
 
 func SetupMasterInfo() {
-	host, k0 := os.LookupEnv(MasterNotificationServerHostEnvironmentVariable)
+	host, k0 := os.LookupEnv(MasterGatewayHostEnvironmentVariable)
 	if !k0 {
 		logger.L().Info("Running notification server as master")
 		return

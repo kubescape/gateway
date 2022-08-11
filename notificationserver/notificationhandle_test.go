@@ -10,8 +10,8 @@ import (
 )
 
 // NewNotificationServerMasterMock -
-func NewNotificationServerMasterMock() *NotificationServer {
-	return &NotificationServer{
+func NewNotificationServerMasterMock() *Gateway {
+	return &Gateway{
 		wa:                  &websocketactions.WebsocketActionsMock{},
 		outgoingConnections: *NewConnectionsObj(),
 		incomingConnections: *NewConnectionsObj(),
@@ -19,11 +19,11 @@ func NewNotificationServerMasterMock() *NotificationServer {
 }
 
 // NewNotificationServerEdgeMock -
-func NewNotificationServerEdgeMock() *NotificationServer {
+func NewNotificationServerEdgeMock() *Gateway {
 	RootHost = "https://blabla"
 	RootAttributes = []string{"customer"}
 
-	return &NotificationServer{
+	return &Gateway{
 		wa:                  &websocketactions.WebsocketActionsMock{},
 		outgoingConnections: *NewConnectionsObj(),
 		incomingConnections: *NewConnectionsObj(),

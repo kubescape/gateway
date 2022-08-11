@@ -24,23 +24,23 @@ import (
 	"github.com/kubescape/gateway/notificationserver/websocketactions"
 )
 
-// NotificationServer -
-type NotificationServer struct {
+// Gateway -
+type Gateway struct {
 	wa                       websocketactions.IWebsocketActions
 	outgoingConnections      Connections
 	incomingConnections      Connections
 	outgoingConnectionsMutex *sync.Mutex
 }
 
-// NewNotificationServer -
-func NewNotificationServer() *NotificationServer {
+// NewGateway -
+func NewGateway() *Gateway {
 	pathToConfig := os.Getenv(ConfigEnvironmentVariable) // if empty, will load config from default path
 	if _, err := armometadata.LoadConfig(pathToConfig, true); err != nil {
 		logger.L().Warning(err.Error())
 	}
 
 	SetupMasterInfo()
-	return &NotificationServer{
+	return &Gateway{
 		wa:                       websocketactions.NewWebsocketActions(),
 		outgoingConnections:      *NewConnectionsObj(),
 		incomingConnections:      *NewConnectionsObj(),
@@ -51,7 +51,7 @@ func NewNotificationServer() *NotificationServer {
 type Notification notifier.Notification
 
 // WebsocketNotificationHandler - create websocket with server
-func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter, r *http.Request) {
+func (nh *Gateway) WebsocketNotificationHandler(w http.ResponseWriter, r *http.Request) {
 	// ----------------------------------------------------- 1
 	// receive websocket connection from client
 	if r.Method != http.MethodGet {
@@ -85,7 +85,7 @@ func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter
 }
 
 // ConnectToMaster -
-func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string, retry int) {
+func (nh *Gateway) ConnectToMaster(notificationAtt map[string]string, retry int) {
 	if IsMaster() { // only edge connects to master
 		return
 	}
@@ -160,7 +160,7 @@ func (nh *NotificationServer) ConnectToMaster(notificationAtt map[string]string,
 }
 
 // RestAPINotificationHandler -
-func (nh *NotificationServer) RestAPINotificationHandler(w http.ResponseWriter, r *http.Request) {
+func (nh *Gateway) RestAPINotificationHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		logger.L().Error("Method not allowed. returning 405")
 		http.Error(w, "Method not allowed", 405)
@@ -200,7 +200,7 @@ func (nh *NotificationServer) RestAPINotificationHandler(w http.ResponseWriter, 
 }
 
 // SendNotification -
-func (nh *NotificationServer) SendNotification(route map[string]string, notification []byte, sendSynchronicity bool) ([]int, error) {
+func (nh *Gateway) SendNotification(route map[string]string, notification []byte, sendSynchronicity bool) ([]int, error) {
 
 	ids := []int{}
 	errMsgs := []string{}
@@ -228,7 +228,7 @@ func (nh *NotificationServer) SendNotification(route map[string]string, notifica
 	}
 	return ids, nil
 }
-func (nh *NotificationServer) sendSingleNotification(conn *websocketactions.Connection, preparedMessage *websocket.PreparedMessage, retry int) error {
+func (nh *Gateway) sendSingleNotification(conn *websocketactions.Connection, preparedMessage *websocket.PreparedMessage, retry int) error {
 	defer func() {
 		if err := recover(); err != nil {
 			if retry < 2 && strings.Contains(fmt.Sprintf("%v", err), "concurrent write to websocket connection") {
@@ -255,7 +255,7 @@ func (nh *NotificationServer) sendSingleNotification(conn *websocketactions.Conn
 }
 
 // AcceptWebsocketConnection -
-func (nh *NotificationServer) AcceptWebsocketConnection(w http.ResponseWriter, r *http.Request) (*websocket.Conn, map[string]string, error) {
+func (nh *Gateway) AcceptWebsocketConnection(w http.ResponseWriter, r *http.Request) (*websocket.Conn, map[string]string, error) {
 
 	notificationAtt, err := nh.ParseURLPath(r.URL)
 	if err != nil {
@@ -272,13 +272,13 @@ func (nh *NotificationServer) AcceptWebsocketConnection(w http.ResponseWriter, r
 }
 
 // CleanupIncomeConnection - cleanup one connection with matching id
-func (nh *NotificationServer) CleanupIncomeConnection(id int) {
+func (nh *Gateway) CleanupIncomeConnection(id int) {
 	// remove connection from list
 	nh.incomingConnections.RemoveID(id)
 }
 
 // CleanupOutgoingConnection -
-func (nh *NotificationServer) CleanupOutgoingConnection(notificationAtt map[string]string) {
+func (nh *Gateway) CleanupOutgoingConnection(notificationAtt map[string]string) {
 	// remove outgoing connection from list
 	nh.outgoingConnections.Remove(notificationAtt)
 
@@ -288,7 +288,7 @@ func (nh *NotificationServer) CleanupOutgoingConnection(notificationAtt map[stri
 }
 
 // WebsocketReceiveNotification maintain websocket connection // RestAPIReceiveNotification -
-func (nh *NotificationServer) WebsocketReceiveNotification(connObj *websocketactions.Connection) error {
+func (nh *Gateway) WebsocketReceiveNotification(connObj *websocketactions.Connection) error {
 	// Websocket ping pong
 	for {
 		msgType, message, err := nh.wa.ReadMessage(connObj)
@@ -330,7 +330,7 @@ func (nh *NotificationServer) WebsocketReceiveNotification(connObj *websocketact
 }
 
 // ParseURLPath -
-func (nh *NotificationServer) ParseURLPath(u *url.URL) (map[string]string, error) {
+func (nh *Gateway) ParseURLPath(u *url.URL) (map[string]string, error) {
 	// keeping backward compatibility (capostman)
 	urlPath := strings.Split(u.Path, "/")
 	if len(urlPath) == 4 && urlPath[3] != "" { // capostamn
@@ -351,7 +351,7 @@ func (nh *NotificationServer) ParseURLPath(u *url.URL) (map[string]string, error
 }
 
 // UnmarshalMessage we try to unmarshal a json format message and a bson format message
-func (nh *NotificationServer) UnmarshalMessage(message []byte) (*Notification, error) {
+func (nh *Gateway) UnmarshalMessage(message []byte) (*Notification, error) {
 	n := &Notification{}
 	var err error
 	if err = json.Unmarshal(message, n); err == nil {

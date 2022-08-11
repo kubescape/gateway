@@ -20,7 +20,7 @@ func main() {
 	isReadinessReady := false
 	go probes.InitReadinessV1(&isReadinessReady)
 
-	ns := notificationserver.NewNotificationServer()
+	ns := notificationserver.NewGateway()
 	isReadinessReady = true
 	ns.SetupNotificationServer()
 }

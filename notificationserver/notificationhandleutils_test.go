@@ -23,7 +23,7 @@ func TestSetupMasterInfo(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			os.Setenv(MasterNotificationServerHostEnvironmentVariable, tt.host)
+			os.Setenv(MasterGatewayHostEnvironmentVariable, tt.host)
 			SetupMasterInfo()
 			assert.Equal(t, tt.host, RootHost)
 		})
