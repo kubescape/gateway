@@ -1,4 +1,4 @@
-package notificationserver
+package gateway
 
 import (
 	"io"

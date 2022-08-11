@@ -1,4 +1,4 @@
-package notificationserver
+package gateway
 
 import (
 	"encoding/json"
@@ -21,7 +21,7 @@ import (
 	"github.com/gorilla/websocket"
 	"gopkg.in/mgo.v2/bson"
 
-	"github.com/kubescape/gateway/notificationserver/websocketactions"
+	"github.com/kubescape/gateway/pkg/websocketactions"
 )
 
 // Gateway is the main Gateway service object.

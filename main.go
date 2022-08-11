@@ -4,7 +4,7 @@ import (
 	"flag"
 	"os"
 
-	"github.com/kubescape/gateway/notificationserver"
+	"github.com/kubescape/gateway/pkg"
 
 	"github.com/armosec/utils-k8s-go/probes"
 	logger "github.com/dwertent/go-logger"
@@ -20,12 +20,12 @@ func main() {
 	isReadinessReady := false
 	go probes.InitReadinessV1(&isReadinessReady)
 
-	gateway := notificationserver.NewGateway()
+	gateway := gateway.NewGateway()
 	isReadinessReady = true
 	gateway.SetupAndServe()
 }
 
 // DisplayBuildTag outputs the bulid tag of the current release
 func displayBuildTag() {
-	logger.L().Info("Image version", helpers.String("release", os.Getenv(notificationserver.ReleaseBuildTagEnvironmentVariable)))
+	logger.L().Info("Image version", helpers.String("release", os.Getenv(gateway.ReleaseBuildTagEnvironmentVariable)))
 }

@@ -1,10 +1,10 @@
-package notificationserver
+package gateway
 
 import (
 	"math/rand"
 	"sync"
 
-	"github.com/kubescape/gateway/notificationserver/websocketactions"
+	"github.com/kubescape/gateway/pkg/websocketactions"
 
 	strutils "github.com/armosec/utils-go/str"
 	logger "github.com/dwertent/go-logger"
