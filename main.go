@@ -7,8 +7,8 @@ import (
 	"github.com/kubescape/gateway/pkg"
 
 	"github.com/armosec/utils-k8s-go/probes"
-	logger "github.com/dwertent/go-logger"
-	"github.com/dwertent/go-logger/helpers"
+	logger "github.com/kubescape/go-logger"
+	"github.com/kubescape/go-logger/helpers"
 )
 
 //go:generate swagger generate spec -o ./docs/swagger.yaml

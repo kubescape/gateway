@@ -7,8 +7,8 @@ import (
 	"github.com/kubescape/gateway/pkg/websocketactions"
 
 	strutils "github.com/armosec/utils-go/str"
-	logger "github.com/dwertent/go-logger"
-	"github.com/dwertent/go-logger/helpers"
+	logger "github.com/kubescape/go-logger"
+	"github.com/kubescape/go-logger/helpers"
 
 	"github.com/gorilla/websocket"
 )

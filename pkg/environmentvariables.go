@@ -1,9 +1,9 @@
 package gateway
 
 const (
-	ConfigEnvironmentVariable               = "CA_CONFIG"
-	GatewayWebsocketPortEnvironmentVariable = "CA_NOTIFICATION_SERVER_WS_PORT"
-	GatewayRestApiPortEnvironmentVariable   = "CA_NOTIFICATION_SERVER_PORT"
-	MasterGatewayHostEnvironmentVariable    = "MASTER_NOTIFICATION_SERVER_HOST"
+	ConfigEnvironmentVariable               = "CONFIG"
+	GatewayWebsocketPortEnvironmentVariable = "WEBSOCKET_PORT"
+	GatewayRestApiPortEnvironmentVariable   = "HTTP_PORT"
+	ParentGatewayHostEnvironmentVariable    = "PARENT_URL"
 	ReleaseBuildTagEnvironmentVariable      = "RELEASE"
 )

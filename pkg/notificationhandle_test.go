@@ -1,12 +1,16 @@
 package gateway
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"testing"
 
-	"github.com/kubescape/gateway/notificationserver/websocketactions"
+	notifier "github.com/armosec/cluster-notifier-api-go/notificationserver"
+	"github.com/armosec/utils-k8s-go/armometadata"
+	"github.com/kubescape/gateway/pkg/websocketactions"
+	"github.com/stretchr/testify/assert"
 )
 
 // NewNotificationServerMasterMock -
@@ -20,48 +24,31 @@ func NewNotificationServerMasterMock() *Gateway {
 
 // NewNotificationServerEdgeMock -
 func NewNotificationServerEdgeMock() *Gateway {
-	RootHost = "https://blabla"
-	RootAttributes = []string{"customer"}
-
 	return &Gateway{
 		wa:                  &websocketactions.WebsocketActionsMock{},
 		outgoingConnections: *NewConnectionsObj(),
 		incomingConnections: *NewConnectionsObj(),
+		config: &armometadata.ClusterConfig{
+			ClusterName: "test",
+			AccountID:   "1234",
+		},
 	}
 }
 
 func HTTPRequestMock() *http.Request {
 	r := &http.Request{}
 	r.Method = http.MethodGet
-	r.URL = &url.URL{Scheme: "https://", Host: "blabla", Path: "v1/somepath", RawQuery: "customer=test&cluster=kube"}
+	r.URL = &url.URL{Scheme: "https", Host: "localhost", Path: "v1/somepath", RawQuery: "customer=test&cluster=kube"}
 	r.Body = &io.PipeReader{}
 	return r
 }
 
 func TestParseURLQuery(t *testing.T) {
 	ns := NewNotificationServerEdgeMock()
-	att, err := ns.ParseURLPath(&url.URL{RawQuery: "customer=test&cluster=kube"})
-	if err != nil {
-		t.Error(err)
-	}
-	if len(att) != 2 {
-		t.Error("len(att) != 2")
-	}
-	if att["customer"] != "test" || att["cluster"] != "kube" {
-		t.Error("wrong key value")
-	}
-}
+	att, err := ns.parseURLPath(&url.URL{RawQuery: fmt.Sprintf("%s=test&cluster=kube", notifier.TargetCustomer)})
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(att))
 
-func TestParseURLPath(t *testing.T) {
-	ns := NewNotificationServerEdgeMock()
-	att, err := ns.ParseURLPath(&url.URL{Path: "/v1/notify/my-id"})
-	if err != nil {
-		t.Error(err)
-	}
-	if len(att) != 1 {
-		t.Error("len(att) != 1")
-	}
-	if att["my-id"] != "" {
-		t.Error("wrong key value")
-	}
+	assert.Equal(t, att[notifier.TargetCustomer], "test")
+	assert.Equal(t, att["cluster"], "kube")
 }

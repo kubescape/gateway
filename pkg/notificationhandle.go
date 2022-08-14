@@ -13,8 +13,8 @@ import (
 	"time"
 
 	strutils "github.com/armosec/utils-go/str"
-	logger "github.com/dwertent/go-logger"
-	"github.com/dwertent/go-logger/helpers"
+	logger "github.com/kubescape/go-logger"
+	"github.com/kubescape/go-logger/helpers"
 
 	notifier "github.com/armosec/cluster-notifier-api-go/notificationserver"
 	"github.com/armosec/utils-k8s-go/armometadata"
@@ -32,21 +32,24 @@ type Gateway struct {
 	outgoingConnections      Connections
 	incomingConnections      Connections
 	outgoingConnectionsMutex *sync.Mutex
+	config                   *armometadata.ClusterConfig
 }
 
 // NewGateway creates a new Gateway
 func NewGateway() *Gateway {
 	pathToConfig := os.Getenv(ConfigEnvironmentVariable) // if empty, will load config from default path
-	if _, err := armometadata.LoadConfig(pathToConfig, true); err != nil {
+	config, err := armometadata.LoadConfig(pathToConfig)
+	if err != nil {
 		logger.L().Warning(err.Error())
 	}
+	setupParentInfo(config)
 
-	SetupMasterInfo()
 	return &Gateway{
 		wa:                       websocketactions.NewWebsocketActions(),
 		outgoingConnections:      *NewConnectionsObj(),
 		incomingConnections:      *NewConnectionsObj(),
 		outgoingConnectionsMutex: &sync.Mutex{},
+		config:                   config,
 	}
 }
 
@@ -58,7 +61,7 @@ func (nh *Gateway) WebsocketNotificationHandler(w http.ResponseWriter, r *http.R
 	// receive websocket connection from client
 	if r.Method != http.MethodGet {
 		logger.L().Error("Method not allowed")
-		http.Error(w, "Method not allowed", 405)
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -77,7 +80,7 @@ func (nh *Gateway) WebsocketNotificationHandler(w http.ResponseWriter, r *http.R
 	// ----------------------------------------------------- 3
 	// register route in master if master configured
 	// create websocket with master
-	go nh.ConnectToMaster(notificationAtt, 0)
+	go nh.connectToMaster(notificationAtt, 0)
 
 	// ----------------------------------------------------- 4
 	// Websocket read messages
@@ -87,12 +90,12 @@ func (nh *Gateway) WebsocketNotificationHandler(w http.ResponseWriter, r *http.R
 }
 
 // ConnectToMaster registers an incoming connection with given attributes with the Master Gateway
-func (nh *Gateway) ConnectToMaster(notificationAtt map[string]string, retry int) {
-	if IsMaster() { // only edge connects to master
+func (nh *Gateway) connectToMaster(notificationAtt map[string]string, retry int) {
+	if nh.hasParent() { // only edge connects to master
 		return
 	}
 
-	att := strutils.MergeSliceAndMap(RootAttributes, notificationAtt)
+	att := strutils.MergeSliceAndMap([]string{notifier.TargetCustomer}, notificationAtt)
 	if len(att) == 0 {
 		att = notificationAtt
 	}
@@ -104,21 +107,24 @@ func (nh *Gateway) ConnectToMaster(notificationAtt map[string]string, retry int)
 		logger.L().Info("edge already connected to master, not creating new connection")
 		return
 	}
-
-	masterURL := fmt.Sprintf("%s?", RootHost)
-	amp := ""
-	for i, j := range att {
-		masterURL += amp
-		masterURL += fmt.Sprintf("%s=%s", i, j)
-		amp = "&"
+	parentURL, err := url.Parse(nh.config.RootGatewayURL)
+	if err != nil {
+		logger.L().Error(err.Error())
+		return
 	}
-	logger.L().Info("connecting to master", helpers.String("url", masterURL))
+
+	q := parentURL.Query()
+	for i, j := range att {
+		q.Add(i, j)
+	}
+	parentURL.RawQuery = q.Encode()
+	logger.L().Info("connecting to master", helpers.String("url", parentURL.String()))
 
 	// connect to master
-	conn, _, err := nh.wa.DefaultDialer(masterURL, nil)
+	conn, _, err := nh.wa.DefaultDialer(parentURL.String())
 	if err != nil {
 		nh.outgoingConnectionsMutex.Unlock()
-		logger.L().Error("in ConnectToMaster", helpers.Error(err))
+		logger.L().Error("in connectToMaster", helpers.Error(err))
 		return
 	}
 	connObj, _ := nh.outgoingConnections.Append(att, conn)
@@ -139,7 +145,7 @@ func (nh *Gateway) ConnectToMaster(notificationAtt map[string]string, retry int)
 	}(connObj)
 
 	if err := nh.WebsocketReceiveNotification(connObj); err != nil {
-		logger.L().Warning("in ConnectToMaster", helpers.String("attributes", strutils.ObjectToString(att)), helpers.Error(err))
+		logger.L().Warning("in connectToMaster", helpers.String("attributes", strutils.ObjectToString(att)), helpers.Error(err))
 	}
 
 	nh.wa.Close(connObj)
@@ -148,7 +154,7 @@ func (nh *Gateway) ConnectToMaster(notificationAtt map[string]string, retry int)
 		nh.outgoingConnectionsMutex.Lock()
 		nh.outgoingConnections.Remove(notificationAtt)
 		nh.outgoingConnectionsMutex.Unlock()
-		nh.ConnectToMaster(notificationAtt, retry+1)
+		nh.connectToMaster(notificationAtt, retry+1)
 	} else {
 		logger.L().Warning("disconnected from master with connection, removing connection from list", helpers.String("attributes", strutils.ObjectToString(att)))
 		nh.outgoingConnectionsMutex.Lock()
@@ -156,7 +162,7 @@ func (nh *Gateway) ConnectToMaster(notificationAtt map[string]string, retry int)
 
 		nh.CleanupOutgoingConnection(att)
 		if nh.outgoingConnections.Len() == 0 && nh.incomingConnections.Len() > 0 {
-			panic(fmt.Sprintf("failed to connect to master: '%s'", strutils.ObjectToString(att)))
+			panic(fmt.Sprintf("failed to connect to parent: '%s'", strutils.ObjectToString(att)))
 		}
 	}
 }
@@ -165,7 +171,7 @@ func (nh *Gateway) ConnectToMaster(notificationAtt map[string]string, retry int)
 func (nh *Gateway) RestAPINotificationHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		logger.L().Error("Method not allowed. returning 405")
-		http.Error(w, "Method not allowed", 405)
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -260,7 +266,7 @@ func (nh *Gateway) sendSingleNotification(conn *websocketactions.Connection, pre
 // AcceptWebsocketConnection accepts an incoming websocket connection
 func (nh *Gateway) AcceptWebsocketConnection(w http.ResponseWriter, r *http.Request) (*websocket.Conn, map[string]string, error) {
 
-	notificationAtt, err := nh.ParseURLPath(r.URL)
+	notificationAtt, err := nh.parseURLPath(r.URL)
 	if err != nil {
 		return nil, notificationAtt, err
 	}
@@ -300,11 +306,11 @@ func (nh *Gateway) WebsocketReceiveNotification(connObj *websocketactions.Connec
 		}
 		switch msgType {
 		case websocket.CloseMessage:
-			return fmt.Errorf("In WebsocketReceiveNotification websocket received CloseMessage")
+			return fmt.Errorf("in WebsocketReceiveNotification websocket received CloseMessage")
 		case websocket.PingMessage:
 			err := nh.wa.WritePongMessage(connObj)
 			if err != nil {
-				return fmt.Errorf("In WebsocketReceiveNotification WritePongMessage error: %v", err)
+				return fmt.Errorf("in WebsocketReceiveNotification WritePongMessage error: %v", err)
 			}
 		case websocket.TextMessage:
 
@@ -317,28 +323,23 @@ func (nh *Gateway) WebsocketReceiveNotification(connObj *websocketactions.Connec
 		// get notificationID from message
 		n, err := nh.UnmarshalMessage(message)
 		if err != nil {
-			logger.L().Error("In WebsocketReceiveNotification UnmarshalMessage", helpers.Error(err))
-			return fmt.Errorf("In WebsocketReceiveNotification UnmarshalMessage error: %v", err)
+			logger.L().Error("in WebsocketReceiveNotification UnmarshalMessage", helpers.Error(err))
+			return fmt.Errorf("in WebsocketReceiveNotification UnmarshalMessage error: %v", err)
 		}
 		if n.Target == nil || len(n.Target) == 0 {
 			logger.L().Error("In WebsocketReceiveNotification received empty notification.Target")
-			return fmt.Errorf("In WebsocketReceiveNotification received empty notification.Target")
+			return fmt.Errorf("in WebsocketReceiveNotification received empty notification.Target")
 		}
 		// send message
 		if _, err := nh.SendNotification(n.Target, message, n.SendSynchronicity); err != nil {
 			logger.L().Error("In WebsocketReceiveNotification SendNotification", helpers.Error(err))
-			return fmt.Errorf("In WebsocketReceiveNotification SendNotification error: %v", err)
+			return fmt.Errorf("in WebsocketReceiveNotification SendNotification error: %v", err)
 		}
 	}
 }
 
-// ParseURLPath transforms a given URL path parameters to notification attributes
-func (nh *Gateway) ParseURLPath(u *url.URL) (map[string]string, error) {
-	// keeping backward compatibility (capostman)
-	urlPath := strings.Split(u.Path, "/")
-	if len(urlPath) == 4 && urlPath[3] != "" { // capostamn
-		return map[string]string{urlPath[3]: ""}, nil
-	}
+// parseURLPath transforms a given URL path parameters to notification attributes
+func (nh *Gateway) parseURLPath(u *url.URL) (map[string]string, error) {
 
 	att := make(map[string]string)
 	q := u.Query()
@@ -364,4 +365,16 @@ func (nh *Gateway) UnmarshalMessage(message []byte) (*Notification, error) {
 		return n, nil
 	}
 	return n, err
+}
+
+// hasParent does the parent host is set
+func (nh *Gateway) hasParent() bool {
+	return nh.config.RootGatewayURL == ""
+}
+
+// setupParentInfo sets up the parent host URL
+func setupParentInfo(config *armometadata.ClusterConfig) {
+	if parent := os.Getenv(ParentGatewayHostEnvironmentVariable); parent != "" {
+		config.RootGatewayURL = parent
+	}
 }

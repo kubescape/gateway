@@ -2,14 +2,15 @@ package gateway
 
 import (
 	"fmt"
-	"github.com/kubescape/gateway/docs"
 	"net/http"
 	"os"
 	"regexp"
 
+	"github.com/kubescape/gateway/docs"
+
 	notifier "github.com/armosec/cluster-notifier-api-go/notificationserver"
-	logger "github.com/dwertent/go-logger"
-	"github.com/dwertent/go-logger/helpers"
+	logger "github.com/kubescape/go-logger"
+	"github.com/kubescape/go-logger/helpers"
 )
 
 var (
