@@ -1,4 +1,4 @@
-package notificationserver
+package gateway
 
 import (
 	"encoding/json"
@@ -21,11 +21,13 @@ import (
 	"github.com/gorilla/websocket"
 	"gopkg.in/mgo.v2/bson"
 
-	"github.com/kubescape/gateway/notificationserver/websocketactions"
+	"github.com/kubescape/gateway/pkg/websocketactions"
 )
 
-// NotificationServer -
-type NotificationServer struct {
+// Gateway is the main Gateway service object.
+// It acts as a facade that manages incoming and outgoing connections, routes
+// messages to recipients etc.
+type Gateway struct {
 	wa                       websocketactions.IWebsocketActions
 	outgoingConnections      Connections
 	incomingConnections      Connections
@@ -33,14 +35,8 @@ type NotificationServer struct {
 	config                   *armometadata.ClusterConfig
 }
 
-func setupParentInfo(config *armometadata.ClusterConfig) {
-	if parent := os.Getenv(MasterNotificationServerHostEnvironmentVariable); parent != "" {
-		config.RootGatewayURL = parent
-	}
-}
-
-// NewNotificationServer -
-func NewNotificationServer() *NotificationServer {
+// NewGateway creates a new Gateway
+func NewGateway() *Gateway {
 	pathToConfig := os.Getenv(ConfigEnvironmentVariable) // if empty, will load config from default path
 	config, err := armometadata.LoadConfig(pathToConfig)
 	if err != nil {
@@ -48,7 +44,7 @@ func NewNotificationServer() *NotificationServer {
 	}
 	setupParentInfo(config)
 
-	return &NotificationServer{
+	return &Gateway{
 		wa:                       websocketactions.NewWebsocketActions(),
 		outgoingConnections:      *NewConnectionsObj(),
 		incomingConnections:      *NewConnectionsObj(),
@@ -59,8 +55,8 @@ func NewNotificationServer() *NotificationServer {
 
 type Notification notifier.Notification
 
-// WebsocketNotificationHandler - create websocket with server
-func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter, r *http.Request) {
+// WebsocketNotificationHandler establishes a websocket connection and handles incoming notifications
+func (nh *Gateway) WebsocketNotificationHandler(w http.ResponseWriter, r *http.Request) {
 	// ----------------------------------------------------- 1
 	// receive websocket connection from client
 	if r.Method != http.MethodGet {
@@ -89,12 +85,12 @@ func (nh *NotificationServer) WebsocketNotificationHandler(w http.ResponseWriter
 	// ----------------------------------------------------- 4
 	// Websocket read messages
 	nh.WebsocketReceiveNotification(newConn)
-	nh.CleanupIncomeConnection(id)
+	nh.CleanupIncomingConnection(id)
 	nh.wa.Close(newConn)
 }
 
-// connectToMaster open websocket connection to the master
-func (nh *NotificationServer) connectToMaster(notificationAtt map[string]string, retry int) {
+// ConnectToMaster registers an incoming connection with given attributes with the Master Gateway
+func (nh *Gateway) connectToMaster(notificationAtt map[string]string, retry int) {
 	if nh.hasParent() { // only edge connects to master
 		return
 	}
@@ -171,8 +167,8 @@ func (nh *NotificationServer) connectToMaster(notificationAtt map[string]string,
 	}
 }
 
-// RestAPINotificationHandler -
-func (nh *NotificationServer) RestAPINotificationHandler(w http.ResponseWriter, r *http.Request) {
+// RestAPINotificationHandler handles the notifications received over the REST API
+func (nh *Gateway) RestAPINotificationHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		logger.L().Error("Method not allowed. returning 405")
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -211,8 +207,8 @@ func (nh *NotificationServer) RestAPINotificationHandler(w http.ResponseWriter, 
 
 }
 
-// SendNotification -
-func (nh *NotificationServer) SendNotification(route map[string]string, notification []byte, sendSynchronicity bool) ([]int, error) {
+// SendNotification sends a notification to its intended recipient
+func (nh *Gateway) SendNotification(route map[string]string, notification []byte, sendSynchronicity bool) ([]int, error) {
 
 	ids := []int{}
 	errMsgs := []string{}
@@ -240,7 +236,8 @@ func (nh *NotificationServer) SendNotification(route map[string]string, notifica
 	}
 	return ids, nil
 }
-func (nh *NotificationServer) sendSingleNotification(conn *websocketactions.Connection, preparedMessage *websocket.PreparedMessage, retry int) error {
+
+func (nh *Gateway) sendSingleNotification(conn *websocketactions.Connection, preparedMessage *websocket.PreparedMessage, retry int) error {
 	defer func() {
 		if err := recover(); err != nil {
 			if retry < 2 && strings.Contains(fmt.Sprintf("%v", err), "concurrent write to websocket connection") {
@@ -258,7 +255,7 @@ func (nh *NotificationServer) sendSingleNotification(conn *websocketactions.Conn
 	logger.L().Info("sending notification", helpers.String("attributes", strutils.ObjectToString(conn.GetAttributes())), helpers.Int("id", conn.ID))
 	err := nh.wa.WritePreparedMessage(conn, preparedMessage)
 	if err != nil {
-		nh.CleanupIncomeConnection(conn.ID)
+		nh.CleanupIncomingConnection(conn.ID)
 		e := fmt.Errorf("in sendSingleNotification %s, connection %d is not alive, error: %v", strutils.ObjectToString(conn.GetAttributes()), conn.ID, err)
 		logger.L().Error(e.Error())
 		return e
@@ -266,8 +263,8 @@ func (nh *NotificationServer) sendSingleNotification(conn *websocketactions.Conn
 	return nil
 }
 
-// AcceptWebsocketConnection -
-func (nh *NotificationServer) AcceptWebsocketConnection(w http.ResponseWriter, r *http.Request) (*websocket.Conn, map[string]string, error) {
+// AcceptWebsocketConnection accepts an incoming websocket connection
+func (nh *Gateway) AcceptWebsocketConnection(w http.ResponseWriter, r *http.Request) (*websocket.Conn, map[string]string, error) {
 
 	notificationAtt, err := nh.parseURLPath(r.URL)
 	if err != nil {
@@ -283,14 +280,14 @@ func (nh *NotificationServer) AcceptWebsocketConnection(w http.ResponseWriter, r
 
 }
 
-// CleanupIncomeConnection - cleanup one connection with matching id
-func (nh *NotificationServer) CleanupIncomeConnection(id int) {
+// CleanupIncomingConnection cleans up an incoming connection with a given ID
+func (nh *Gateway) CleanupIncomingConnection(id int) {
 	// remove connection from list
 	nh.incomingConnections.RemoveID(id)
 }
 
-// CleanupOutgoingConnection -
-func (nh *NotificationServer) CleanupOutgoingConnection(notificationAtt map[string]string) {
+// CleanupOutgoingConnection cleans up an incoming connection with given notification attributes
+func (nh *Gateway) CleanupOutgoingConnection(notificationAtt map[string]string) {
 	// remove outgoing connection from list
 	nh.outgoingConnections.Remove(notificationAtt)
 
@@ -299,8 +296,8 @@ func (nh *NotificationServer) CleanupOutgoingConnection(notificationAtt map[stri
 	nh.incomingConnections.CloseConnections(nh.wa, notificationAtt)
 }
 
-// WebsocketReceiveNotification maintain websocket connection // RestAPIReceiveNotification -
-func (nh *NotificationServer) WebsocketReceiveNotification(connObj *websocketactions.Connection) error {
+// WebsocketReceiveNotification maintains the websocket connection and receives notifications sent over it
+func (nh *Gateway) WebsocketReceiveNotification(connObj *websocketactions.Connection) error {
 	// Websocket ping pong
 	for {
 		msgType, message, err := nh.wa.ReadMessage(connObj)
@@ -341,8 +338,8 @@ func (nh *NotificationServer) WebsocketReceiveNotification(connObj *websocketact
 	}
 }
 
-// parseURLPath -
-func (nh *NotificationServer) parseURLPath(u *url.URL) (map[string]string, error) {
+// parseURLPath transforms a given URL path parameters to notification attributes
+func (nh *Gateway) parseURLPath(u *url.URL) (map[string]string, error) {
 
 	att := make(map[string]string)
 	q := u.Query()
@@ -357,8 +354,8 @@ func (nh *NotificationServer) parseURLPath(u *url.URL) (map[string]string, error
 	return att, nil
 }
 
-// UnmarshalMessage we try to unmarshal a json format message and a bson format message
-func (nh *NotificationServer) UnmarshalMessage(message []byte) (*Notification, error) {
+// UnmarshalMessage attempts to unmarshal a given message into either a JSON or BSON format
+func (nh *Gateway) UnmarshalMessage(message []byte) (*Notification, error) {
 	n := &Notification{}
 	var err error
 	if err = json.Unmarshal(message, n); err == nil {
@@ -371,6 +368,13 @@ func (nh *NotificationServer) UnmarshalMessage(message []byte) (*Notification, e
 }
 
 // hasParent does the parent host is set
-func (nh *NotificationServer) hasParent() bool {
+func (nh *Gateway) hasParent() bool {
 	return nh.config.RootGatewayURL == ""
+}
+
+// setupParentInfo sets up the parent host URL
+func setupParentInfo(config *armometadata.ClusterConfig) {
+	if parent := os.Getenv(ParentGatewayHostEnvironmentVariable); parent != "" {
+		config.RootGatewayURL = parent
+	}
 }

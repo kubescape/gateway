@@ -1,10 +1,10 @@
-package notificationserver
+package gateway
 
 import (
 	"sync"
 	"testing"
 
-	"github.com/kubescape/gateway/notificationserver/websocketactions"
+	"github.com/kubescape/gateway/pkg/websocketactions"
 
 	"github.com/stretchr/testify/assert"
 )

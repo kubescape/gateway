@@ -1,4 +1,4 @@
-package notificationserver
+package gateway
 
 import (
 	"fmt"
@@ -9,13 +9,13 @@ import (
 
 	notifier "github.com/armosec/cluster-notifier-api-go/notificationserver"
 	"github.com/armosec/utils-k8s-go/armometadata"
-	"github.com/kubescape/gateway/notificationserver/websocketactions"
+	"github.com/kubescape/gateway/pkg/websocketactions"
 	"github.com/stretchr/testify/assert"
 )
 
 // NewNotificationServerMasterMock -
-func NewNotificationServerMasterMock() *NotificationServer {
-	return &NotificationServer{
+func NewNotificationServerMasterMock() *Gateway {
+	return &Gateway{
 		wa:                  &websocketactions.WebsocketActionsMock{},
 		outgoingConnections: *NewConnectionsObj(),
 		incomingConnections: *NewConnectionsObj(),
@@ -23,9 +23,8 @@ func NewNotificationServerMasterMock() *NotificationServer {
 }
 
 // NewNotificationServerEdgeMock -
-func NewNotificationServerEdgeMock() *NotificationServer {
-
-	return &NotificationServer{
+func NewNotificationServerEdgeMock() *Gateway {
+	return &Gateway{
 		wa:                  &websocketactions.WebsocketActionsMock{},
 		outgoingConnections: *NewConnectionsObj(),
 		incomingConnections: *NewConnectionsObj(),
