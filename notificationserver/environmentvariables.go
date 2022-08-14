@@ -1,7 +1,7 @@
 package notificationserver
 
 const (
-	ConfigEnvironmentVariable                          = "CA_CONFIG"
+	ConfigEnvironmentVariable                          = "CONFIG"
 	NotificationServerWebsocketPortEnvironmentVariable = "WEBSOCKET_PORT"
 	NotificationServerRestApiPortEnvironmentVariable   = "HTTP_PORT"
 	MasterNotificationServerHostEnvironmentVariable    = "PARENT_URL"

@@ -34,7 +34,7 @@ type NotificationServer struct {
 }
 
 func setupParentInfo(config *armometadata.ClusterConfig) {
-	if parent := os.Getenv(ConfigEnvironmentVariable); parent != "" {
+	if parent := os.Getenv(MasterNotificationServerHostEnvironmentVariable); parent != "" {
 		config.RootGatewayURL = parent
 	}
 }
