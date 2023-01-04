@@ -5,6 +5,9 @@ on:
     branches: 
     - 'master'
     - 'main'
+    paths-ignore:
+      - '**.md' ### Ignore running when README.MD changed.
+      - '.github/workflows/*' ### Ignore running when files under path: .github/workflows/* changed.
 
   # push:
   #   tags:
