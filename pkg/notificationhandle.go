@@ -378,5 +378,4 @@ func setupParentInfo(config *armometadata.ClusterConfig) {
 	if parent := os.Getenv(ParentGatewayHostEnvironmentVariable); parent != "" {
 		config.RootGatewayURL = parent
 	}
-
 }
