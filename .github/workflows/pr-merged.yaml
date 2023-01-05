@@ -1,4 +1,4 @@
-name: pr-merged
+name: build
 on:
   pull_request:
     types: [closed]
