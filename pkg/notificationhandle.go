@@ -63,6 +63,7 @@ func (nh *Gateway) WebsocketNotificationHandler(w http.ResponseWriter, r *http.R
 		logger.L().Error("Method not allowed")
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
+		
 	}
 
 	conn, notificationAtt, err := nh.AcceptWebsocketConnection(w, r)
