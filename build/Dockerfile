@@ -1,6 +1,4 @@
-FROM golang:1.18-alpine as builder
-
-
+FROM golang:1.19-alpine as builder
 
 ENV GO111MODULE=
 
@@ -21,6 +19,8 @@ USER ks
 WORKDIR /home/ks/
 
 COPY --from=builder /work/build/gateway /usr/bin/gateway
+
+ARG image_version
 ENV RELEASE=$image_version
 
 ENTRYPOINT ["gateway"]
