@@ -1,4 +1,6 @@
 # Gateway
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkubescape%2Fgateway.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkubescape%2Fgateway?ref=badge_shield)
+
 
 The Gateway enables broadcasting a single message to the different microservices running in the cluster.
 
@@ -78,3 +80,7 @@ You can use the sample file below to setup your VS code environment for building
 }
 ```
 </details>
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkubescape%2Fgateway.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkubescape%2Fgateway?ref=badge_large)
