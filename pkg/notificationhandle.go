@@ -63,7 +63,7 @@ func (nh *Gateway) WebsocketNotificationHandler(w http.ResponseWriter, r *http.R
 		logger.L().Error("Method not allowed")
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
-		
+
 	}
 
 	conn, notificationAtt, err := nh.AcceptWebsocketConnection(w, r)
@@ -124,9 +124,7 @@ func (nh *Gateway) connectToMaster(notificationAtt map[string]string, retry int)
 	// connect to master
 	conn, _, err := nh.wa.DefaultDialer(parentURL.String())
 	if err != nil {
-		nh.outgoingConnectionsMutex.Unlock()
-		logger.L().Error("in connectToMaster", helpers.Error(err))
-		return
+		logger.L().Fatal("failed to connect to master", helpers.String("url", parentURL.String()), helpers.Error(err))
 	}
 	connObj, _ := nh.outgoingConnections.Append(att, conn)
 	nh.outgoingConnectionsMutex.Unlock()
@@ -163,7 +161,7 @@ func (nh *Gateway) connectToMaster(notificationAtt map[string]string, retry int)
 
 		nh.CleanupOutgoingConnection(att)
 		if nh.outgoingConnections.Len() == 0 && nh.incomingConnections.Len() > 0 {
-			panic(fmt.Sprintf("failed to connect to parent: '%s'", strutils.ObjectToString(att)))
+			logger.L().Fatal(fmt.Sprintf("failed to connect to parent: '%s'", strutils.ObjectToString(att)))
 		}
 	}
 }
@@ -378,5 +376,5 @@ func setupParentInfo(config *armometadata.ClusterConfig) {
 	if parent := os.Getenv(ParentGatewayHostEnvironmentVariable); parent != "" {
 		config.RootGatewayURL = parent
 	}
-	
+
 }
