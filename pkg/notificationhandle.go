@@ -3,7 +3,7 @@ package gateway
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -174,7 +174,7 @@ func (nh *Gateway) RestAPINotificationHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	readBuffer, err := ioutil.ReadAll(r.Body)
+	readBuffer, err := io.ReadAll(r.Body)
 	if err != nil {
 		logger.L().Error("In RestAPINotificationHandler ReadAll", helpers.Error(err))
 		http.Error(w, err.Error(), http.StatusBadRequest)
