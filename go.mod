@@ -1,6 +1,6 @@
 module github.com/kubescape/gateway
 
-go 1.19
+go 1.20
 
 require (
 	github.com/armosec/cluster-notifier-api-go v0.0.5
