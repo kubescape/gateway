@@ -19,6 +19,7 @@ import (
 	notifier "github.com/armosec/cluster-notifier-api-go/notificationserver"
 	"github.com/armosec/utils-k8s-go/armometadata"
 	"github.com/gorilla/websocket"
+	beClientV1 "github.com/kubescape/backend/pkg/client/v1"
 	"github.com/kubescape/backend/pkg/servicediscovery"
 	v1 "github.com/kubescape/backend/pkg/servicediscovery/v1"
 	"github.com/kubescape/gateway/pkg/websocketactions"
@@ -107,7 +108,7 @@ func (nh *Gateway) connectToMaster(notificationAtt map[string]string, retry int)
 		logger.L().Info("edge already connected to master, not creating new connection")
 		return
 	}
-	parentURL, err := url.Parse(nh.rootGatewayURL)
+	parentURL, err := beClientV1.GetRootGatewayUrl(nh.rootGatewayURL)
 	if err != nil {
 		logger.L().Error(err.Error())
 		return
@@ -382,7 +383,7 @@ func getRootGwUrl() string {
 		logger.L().Warning(err.Error())
 	}
 	if url := services.GetGatewayUrl(); url != "" {
-		logger.L().Info("loaded gw url from env var", helpers.String("url", url))
+		logger.L().Info("loaded gw url (service discovery)", helpers.String("url", url))
 		return url
 	}
 

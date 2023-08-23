@@ -8,7 +8,7 @@ require (
 	github.com/armosec/utils-k8s-go v0.0.16
 	github.com/go-openapi/runtime v0.26.0
 	github.com/gorilla/websocket v1.5.0
-	github.com/kubescape/backend v0.0.0-20230823064127-e914c64f4aba
+	github.com/kubescape/backend v0.0.0-20230823120507-a1e2989378b6
 	github.com/kubescape/go-logger v0.0.17
 	github.com/stretchr/testify v1.8.4
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
