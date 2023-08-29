@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	notifier "github.com/armosec/cluster-notifier-api-go/notificationserver"
-	"github.com/armosec/utils-k8s-go/armometadata"
 	"github.com/kubescape/gateway/pkg/websocketactions"
 	"github.com/stretchr/testify/assert"
 )
@@ -28,10 +27,6 @@ func NewNotificationServerEdgeMock() *Gateway {
 		wa:                  &websocketactions.WebsocketActionsMock{},
 		outgoingConnections: *NewConnectionsObj(),
 		incomingConnections: *NewConnectionsObj(),
-		config: &armometadata.ClusterConfig{
-			ClusterName: "test",
-			AccountID:   "1234",
-		},
 	}
 }
 
