@@ -17,7 +17,6 @@ import (
 	"github.com/kubescape/go-logger/helpers"
 
 	notifier "github.com/armosec/cluster-notifier-api-go/notificationserver"
-	"github.com/armosec/utils-k8s-go/armometadata"
 	"github.com/gorilla/websocket"
 	beClientV1 "github.com/kubescape/backend/pkg/client/v1"
 	"github.com/kubescape/backend/pkg/servicediscovery"
@@ -382,16 +381,8 @@ func getRootGwUrl() string {
 	if err != nil {
 		logger.L().Warning(err.Error())
 	}
-	if url := services.GetGatewayUrl(); url != "" {
-		logger.L().Info("loaded gw url (service discovery)", helpers.String("url", url))
-		return url
-	}
+	url := services.GetGatewayUrl()
+	logger.L().Info("loaded gw url (service discovery)", helpers.String("url", url))
 
-	pathToConfig := os.Getenv(ConfigEnvironmentVariable) // if empty, will load config from default path
-	config, err := armometadata.LoadConfig(pathToConfig)
-	if err != nil {
-		logger.L().Warning(err.Error())
-	}
-	logger.L().Info("loaded gw url from config", helpers.String("url", config.RootGatewayURL))
-	return config.RootGatewayURL
+	return url
 }
