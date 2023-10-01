@@ -15,6 +15,7 @@ import (
 	strutils "github.com/armosec/utils-go/str"
 	logger "github.com/kubescape/go-logger"
 	"github.com/kubescape/go-logger/helpers"
+	"github.com/kubescape/kubevuln/config"
 
 	notifier "github.com/armosec/cluster-notifier-api-go/notificationserver"
 	"github.com/armosec/utils-k8s-go/armometadata"
@@ -90,6 +91,12 @@ func (nh *Gateway) WebsocketNotificationHandler(w http.ResponseWriter, r *http.R
 	nh.wa.Close(newConn)
 }
 
+func setHeaders(accessToken string) map[string][]string {
+	return map[string][]string{
+		"Authorization": []string{"Bearer " + accessToken},
+	}
+}
+
 // ConnectToMaster registers an incoming connection with given attributes with the Master Gateway
 func (nh *Gateway) connectToMaster(notificationAtt map[string]string, retry int) {
 	if nh.hasParent() { // only edge connects to master
@@ -108,7 +115,7 @@ func (nh *Gateway) connectToMaster(notificationAtt map[string]string, retry int)
 		logger.L().Info("edge already connected to master, not creating new connection")
 		return
 	}
-	parentURL, err := url.Parse(nh.config.RootGatewayURL)
+	parentURL, err := url.Parse(nh.config.GatewayWebsocketURL)
 	if err != nil {
 		logger.L().Error(err.Error())
 		return
@@ -122,7 +129,13 @@ func (nh *Gateway) connectToMaster(notificationAtt map[string]string, retry int)
 	logger.L().Info("connecting to master", helpers.String("url", parentURL.String()))
 
 	// connect to master
-	conn, _, err := nh.wa.DefaultDialer(parentURL.String())
+	sd, err := config.LoadSecret("/etc/access-token-secret")
+	if err != nil {
+		logger.L().Error(err.Error())
+		return
+	}
+
+	conn, _, err := nh.wa.DefaultDialer(parentURL.String(), setHeaders(sd.Token))
 	if err != nil {
 		logger.L().Fatal("failed to connect to master", helpers.String("url", parentURL.String()), helpers.Error(err))
 	}
@@ -368,13 +381,13 @@ func (nh *Gateway) UnmarshalMessage(message []byte) (*Notification, error) {
 
 // hasParent does the parent host is set
 func (nh *Gateway) hasParent() bool {
-	return nh.config.RootGatewayURL == ""
+	return nh.config.GatewayWebsocketURL == ""
 }
 
 // setupParentInfo sets up the parent host URL
 func setupParentInfo(config *armometadata.ClusterConfig) {
 	if parent := os.Getenv(ParentGatewayHostEnvironmentVariable); parent != "" {
-		config.RootGatewayURL = parent
+		config.GatewayWebsocketURL = parent
 	}
 
 }
