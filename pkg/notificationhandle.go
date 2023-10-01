@@ -3,7 +3,7 @@ package gateway
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -18,12 +18,15 @@ import (
 	"github.com/kubescape/kubevuln/config"
 
 	notifier "github.com/armosec/cluster-notifier-api-go/notificationserver"
-	"github.com/armosec/utils-k8s-go/armometadata"
 	"github.com/gorilla/websocket"
-	"gopkg.in/mgo.v2/bson"
-
+	beClientV1 "github.com/kubescape/backend/pkg/client/v1"
+	"github.com/kubescape/backend/pkg/servicediscovery"
+	v1 "github.com/kubescape/backend/pkg/servicediscovery/v1"
 	"github.com/kubescape/gateway/pkg/websocketactions"
+	"gopkg.in/mgo.v2/bson"
 )
+
+const serviceDiscoveryConfigPath = "/etc/config/services.json"
 
 // Gateway is the main Gateway service object.
 // It acts as a facade that manages incoming and outgoing connections, routes
@@ -33,24 +36,20 @@ type Gateway struct {
 	outgoingConnections      Connections
 	incomingConnections      Connections
 	outgoingConnectionsMutex *sync.Mutex
-	config                   *armometadata.ClusterConfig
+	rootGatewayURL           string
 }
 
 // NewGateway creates a new Gateway
 func NewGateway() *Gateway {
-	pathToConfig := os.Getenv(ConfigEnvironmentVariable) // if empty, will load config from default path
-	config, err := armometadata.LoadConfig(pathToConfig)
-	if err != nil {
-		logger.L().Warning(err.Error())
-	}
-	setupParentInfo(config)
+
+	rootGatewayUrl := getRootGwUrl()
 
 	return &Gateway{
 		wa:                       websocketactions.NewWebsocketActions(),
 		outgoingConnections:      *NewConnectionsObj(),
 		incomingConnections:      *NewConnectionsObj(),
 		outgoingConnectionsMutex: &sync.Mutex{},
-		config:                   config,
+		rootGatewayURL:           rootGatewayUrl,
 	}
 }
 
@@ -115,7 +114,7 @@ func (nh *Gateway) connectToMaster(notificationAtt map[string]string, retry int)
 		logger.L().Info("edge already connected to master, not creating new connection")
 		return
 	}
-	parentURL, err := url.Parse(nh.config.GatewayWebsocketURL)
+	parentURL, err := beClientV1.GetRootGatewayUrl(nh.rootGatewayURL)
 	if err != nil {
 		logger.L().Error(err.Error())
 		return
@@ -187,7 +186,7 @@ func (nh *Gateway) RestAPINotificationHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	readBuffer, err := ioutil.ReadAll(r.Body)
+	readBuffer, err := io.ReadAll(r.Body)
 	if err != nil {
 		logger.L().Error("In RestAPINotificationHandler ReadAll", helpers.Error(err))
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -381,13 +380,22 @@ func (nh *Gateway) UnmarshalMessage(message []byte) (*Notification, error) {
 
 // hasParent does the parent host is set
 func (nh *Gateway) hasParent() bool {
-	return nh.config.GatewayWebsocketURL == ""
+	return nh.rootGatewayURL == ""
 }
 
-// setupParentInfo sets up the parent host URL
-func setupParentInfo(config *armometadata.ClusterConfig) {
-	if parent := os.Getenv(ParentGatewayHostEnvironmentVariable); parent != "" {
-		config.GatewayWebsocketURL = parent
+// getRootGwUrl return the parent host URL. According to the following order: env var, service discovery, config file
+func getRootGwUrl() string {
+	if envVarValue := os.Getenv(ParentGatewayHostEnvironmentVariable); envVarValue != "" {
+		logger.L().Info("loaded gw url from env var", helpers.String("url", envVarValue))
+		return envVarValue
 	}
 
+	services, err := servicediscovery.GetServices(v1.NewServiceDiscoveryFileV1(serviceDiscoveryConfigPath))
+	if err != nil {
+		logger.L().Warning(err.Error())
+	}
+	url := services.GetGatewayUrl()
+	logger.L().Info("loaded gw url (service discovery)", helpers.String("url", url))
+
+	return url
 }

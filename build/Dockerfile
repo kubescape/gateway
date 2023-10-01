@@ -1,24 +1,20 @@
-FROM golang:1.19-alpine as builder
+FROM --platform=$BUILDPLATFORM golang:1.20-bullseye as builder
 
-ENV GO111MODULE=
-
-ENV CGO_ENABLED=0
-
+ENV GO111MODULE=on CGO_ENABLED=0
 WORKDIR /work
-ADD . .
+ARG TARGETOS TARGETARCH
 
-RUN apk add git
+RUN --mount=target=. \
+    --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg \
+    GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /out/gateway .
 
-WORKDIR /work
-RUN go build -o build/gateway
+FROM gcr.io/distroless/static-debian11:nonroot
 
-FROM alpine
+USER nonroot
+WORKDIR /home/nonroot/
 
-RUN addgroup -S ks && adduser -S ks -G ks
-USER ks
-WORKDIR /home/ks/
-
-COPY --from=builder /work/build/gateway /usr/bin/gateway
+COPY --from=builder /out/gateway /usr/bin/gateway
 
 ARG image_version
 ENV RELEASE=$image_version
