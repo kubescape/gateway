@@ -8,9 +8,8 @@ require (
 	github.com/armosec/utils-k8s-go v0.0.18
 	github.com/go-openapi/runtime v0.26.0
 	github.com/gorilla/websocket v1.5.0
-	github.com/kubescape/backend v0.0.7
+	github.com/kubescape/backend v0.0.8-0.20231003075242-690fc75a1964
 	github.com/kubescape/go-logger v0.0.21
-	github.com/kubescape/kubevuln v0.2.111-0.20230930222654-26a5470dd1c6
 	github.com/stretchr/testify v1.8.4
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
 )
@@ -55,6 +54,7 @@ require (
 	github.com/docker/docker v24.0.5+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
+	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.10.1 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/francoispqt/gojay v1.2.13 // indirect

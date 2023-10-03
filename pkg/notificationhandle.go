@@ -15,13 +15,13 @@ import (
 	strutils "github.com/armosec/utils-go/str"
 	logger "github.com/kubescape/go-logger"
 	"github.com/kubescape/go-logger/helpers"
-	"github.com/kubescape/kubevuln/config"
 
 	notifier "github.com/armosec/cluster-notifier-api-go/notificationserver"
 	"github.com/gorilla/websocket"
 	beClientV1 "github.com/kubescape/backend/pkg/client/v1"
 	"github.com/kubescape/backend/pkg/servicediscovery"
 	v1 "github.com/kubescape/backend/pkg/servicediscovery/v1"
+	"github.com/kubescape/backend/pkg/utils"
 	"github.com/kubescape/gateway/pkg/websocketactions"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -90,7 +90,7 @@ func (nh *Gateway) WebsocketNotificationHandler(w http.ResponseWriter, r *http.R
 	nh.wa.Close(newConn)
 }
 
-func setHeaders(accessToken string) map[string][]string {
+func getRequestHeaders(accessToken string) map[string][]string {
 	return map[string][]string{
 		"Authorization": []string{"Bearer " + accessToken},
 	}
@@ -127,14 +127,14 @@ func (nh *Gateway) connectToMaster(notificationAtt map[string]string, retry int)
 	parentURL.RawQuery = q.Encode()
 	logger.L().Info("connecting to master", helpers.String("url", parentURL.String()))
 
-	// connect to master
-	sd, err := config.LoadSecret("/etc/access-token-secret")
+	sd, err := utils.LoadTokenFromSecret("/etc/access-token-secret")
 	if err != nil {
 		logger.L().Error(err.Error())
 		return
 	}
 
-	conn, _, err := nh.wa.DefaultDialer(parentURL.String(), setHeaders(sd.Token))
+	// connect to master
+	conn, _, err := nh.wa.DefaultDialer(parentURL.String(), getRequestHeaders(sd.Token))
 	if err != nil {
 		logger.L().Fatal("failed to connect to master", helpers.String("url", parentURL.String()), helpers.Error(err))
 	}
