@@ -19,6 +19,7 @@ import (
 	notifier "github.com/armosec/cluster-notifier-api-go/notificationserver"
 	"github.com/gorilla/websocket"
 	beClientV1 "github.com/kubescape/backend/pkg/client/v1"
+	beServerV1 "github.com/kubescape/backend/pkg/server/v1"
 	"github.com/kubescape/backend/pkg/servicediscovery"
 	v1 "github.com/kubescape/backend/pkg/servicediscovery/v1"
 	"github.com/kubescape/backend/pkg/utils"
@@ -90,10 +91,10 @@ func (nh *Gateway) WebsocketNotificationHandler(w http.ResponseWriter, r *http.R
 	nh.wa.Close(newConn)
 }
 
-func getRequestHeaders(accessToken string) map[string][]string {
-	return map[string][]string{
-		"Authorization": []string{"Bearer " + accessToken},
-	}
+func getRequestHeaders(accessToken string) http.Header {
+	headers := http.Header{}
+	headers.Set(beServerV1.RequestTokenHeader, accessToken)
+	return headers
 }
 
 // ConnectToMaster registers an incoming connection with given attributes with the Master Gateway
@@ -129,8 +130,7 @@ func (nh *Gateway) connectToMaster(notificationAtt map[string]string, retry int)
 
 	sd, err := utils.LoadTokenFromSecret("/etc/access-token-secret")
 	if err != nil {
-		logger.L().Error(err.Error())
-		return
+		logger.L().Fatal(err.Error())
 	}
 
 	// connect to master
