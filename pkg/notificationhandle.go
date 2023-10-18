@@ -128,7 +128,7 @@ func (nh *Gateway) connectToMaster(notificationAtt map[string]string, retry int)
 	parentURL.RawQuery = q.Encode()
 	logger.L().Info("connecting to master", helpers.String("url", parentURL.String()))
 
-	sd, err := utils.LoadTokenFromSecret("/etc/access-token-secret")
+	sd, err := utils.LoadTokenFromFile("/etc/access-token-secret")
 	if err != nil {
 		logger.L().Fatal(err.Error())
 	}
