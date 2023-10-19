@@ -91,9 +91,9 @@ func (nh *Gateway) WebsocketNotificationHandler(w http.ResponseWriter, r *http.R
 	nh.wa.Close(newConn)
 }
 
-func getRequestHeaders(accessToken string) http.Header {
+func getRequestHeaders(accessKey string) http.Header {
 	headers := http.Header{}
-	headers.Set(beServerV1.RequestTokenHeader, accessToken)
+	headers.Set(beServerV1.AccessKeyHeader, accessKey)
 	return headers
 }
 
@@ -128,13 +128,17 @@ func (nh *Gateway) connectToMaster(notificationAtt map[string]string, retry int)
 	parentURL.RawQuery = q.Encode()
 	logger.L().Info("connecting to master", helpers.String("url", parentURL.String()))
 
-	sd, err := utils.LoadTokenFromFile("/etc/access-token-secret")
-	if err != nil {
-		logger.L().Fatal(err.Error())
+	var accessKey string
+	if credentials, err := utils.LoadCredentialsFromFile("/etc/credentials"); err != nil {
+		logger.L().Error("failed to load credentials", helpers.Error(err))
+	} else {
+		accessKey = credentials.AccessKey
+		logger.L().Info("loaded credentials")
+		logger.L().Debug("access key length", helpers.Int("length", len(accessKey)))
 	}
 
 	// connect to master
-	conn, _, err := nh.wa.DefaultDialer(parentURL.String(), getRequestHeaders(sd.Token))
+	conn, _, err := nh.wa.DefaultDialer(parentURL.String(), getRequestHeaders(accessKey))
 	if err != nil {
 		logger.L().Fatal("failed to connect to master", helpers.String("url", parentURL.String()), helpers.Error(err))
 	}
