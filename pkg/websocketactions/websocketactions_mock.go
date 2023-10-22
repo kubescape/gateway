@@ -44,7 +44,7 @@ func (wam *WebsocketActionsMock) ReadMessage(conn *Connection) (int, []byte, err
 }
 
 // DefaultDialer -
-func (wam *WebsocketActionsMock) DefaultDialer(host string) (*websocket.Conn, *http.Response, error) {
+func (wam *WebsocketActionsMock) DefaultDialer(host string, headers http.Header) (*websocket.Conn, *http.Response, error) {
 	return &websocket.Conn{}, nil, nil
 }
 

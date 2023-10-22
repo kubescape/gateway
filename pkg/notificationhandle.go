@@ -19,8 +19,10 @@ import (
 	notifier "github.com/armosec/cluster-notifier-api-go/notificationserver"
 	"github.com/gorilla/websocket"
 	beClientV1 "github.com/kubescape/backend/pkg/client/v1"
+	beServerV1 "github.com/kubescape/backend/pkg/server/v1"
 	"github.com/kubescape/backend/pkg/servicediscovery"
 	v1 "github.com/kubescape/backend/pkg/servicediscovery/v1"
+	"github.com/kubescape/backend/pkg/utils"
 	"github.com/kubescape/gateway/pkg/websocketactions"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -89,6 +91,12 @@ func (nh *Gateway) WebsocketNotificationHandler(w http.ResponseWriter, r *http.R
 	nh.wa.Close(newConn)
 }
 
+func getRequestHeaders(accessKey string) http.Header {
+	headers := http.Header{}
+	headers.Set(beServerV1.AccessKeyHeader, accessKey)
+	return headers
+}
+
 // ConnectToMaster registers an incoming connection with given attributes with the Master Gateway
 func (nh *Gateway) connectToMaster(notificationAtt map[string]string, retry int) {
 	if nh.hasParent() { // only edge connects to master
@@ -120,8 +128,17 @@ func (nh *Gateway) connectToMaster(notificationAtt map[string]string, retry int)
 	parentURL.RawQuery = q.Encode()
 	logger.L().Info("connecting to master", helpers.String("url", parentURL.String()))
 
+	var accessKey string
+	if credentials, err := utils.LoadCredentialsFromFile("/etc/credentials"); err != nil {
+		logger.L().Error("failed to load credentials", helpers.Error(err))
+	} else {
+		accessKey = credentials.AccessKey
+		logger.L().Info("loaded credentials")
+		logger.L().Debug("access key length", helpers.Int("length", len(accessKey)))
+	}
+
 	// connect to master
-	conn, _, err := nh.wa.DefaultDialer(parentURL.String())
+	conn, _, err := nh.wa.DefaultDialer(parentURL.String(), getRequestHeaders(accessKey))
 	if err != nil {
 		logger.L().Fatal("failed to connect to master", helpers.String("url", parentURL.String()), helpers.Error(err))
 	}
