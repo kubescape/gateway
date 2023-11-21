@@ -21,7 +21,7 @@ import (
 	beClientV1 "github.com/kubescape/backend/pkg/client/v1"
 	beServerV1 "github.com/kubescape/backend/pkg/server/v1"
 	"github.com/kubescape/backend/pkg/servicediscovery"
-	v1 "github.com/kubescape/backend/pkg/servicediscovery/v1"
+	v2 "github.com/kubescape/backend/pkg/servicediscovery/v2"
 	"github.com/kubescape/backend/pkg/utils"
 	"github.com/kubescape/gateway/pkg/websocketactions"
 	"gopkg.in/mgo.v2/bson"
@@ -394,7 +394,7 @@ func getRootGwUrl() string {
 		return envVarValue
 	}
 
-	services, err := servicediscovery.GetServices(v1.NewServiceDiscoveryFileV1(serviceDiscoveryConfigPath))
+	services, err := servicediscovery.GetServices(v2.NewServiceDiscoveryFileV2(serviceDiscoveryConfigPath))
 	if err != nil {
 		logger.L().Warning(err.Error())
 	}
