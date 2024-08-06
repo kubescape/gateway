@@ -20,9 +20,7 @@ func main() {
 	isReadinessReady := false
 	go probes.InitReadinessV1(&isReadinessReady)
 
-	gateway := gateway.NewGateway()
-	isReadinessReady = true
-	gateway.SetupAndServe()
+	gateway.NewGateway(&isReadinessReady).SetupAndServe()
 }
 
 // DisplayBuildTag outputs the bulid tag of the current release
