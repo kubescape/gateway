@@ -11,7 +11,7 @@ on:
   # push:
   #   tags:
   #     - 'v*'
-  
+
 concurrency:
   group: ${{ github.head_ref }}
   cancel-in-progress: true
@@ -21,5 +21,5 @@ jobs:
   pr-created:
     uses: kubescape/workflows/.github/workflows/incluster-comp-pr-created.yaml@main
     with:
-      GO_VERSION: "1.21.1"
+      GO_VERSION: "1.23"
     secrets: inherit
