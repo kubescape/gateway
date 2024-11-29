@@ -38,10 +38,11 @@ type Gateway struct {
 	incomingConnections      Connections
 	outgoingConnectionsMutex *sync.Mutex
 	rootGatewayURL           string
+	isReadinessReady         *bool
 }
 
 // NewGateway creates a new Gateway
-func NewGateway() *Gateway {
+func NewGateway(isReadinessReady *bool) *Gateway {
 
 	rootGatewayUrl := getRootGwUrl()
 
@@ -51,6 +52,7 @@ func NewGateway() *Gateway {
 		incomingConnections:      *NewConnectionsObj(),
 		outgoingConnectionsMutex: &sync.Mutex{},
 		rootGatewayURL:           rootGatewayUrl,
+		isReadinessReady:         isReadinessReady,
 	}
 }
 
@@ -78,6 +80,7 @@ func (nh *Gateway) WebsocketNotificationHandler(w http.ResponseWriter, r *http.R
 	// append new route
 	newConn, id := nh.incomingConnections.Append(notificationAtt, conn)
 	logger.L().Info("accepting websocket connection", helpers.String("url query", r.URL.RawQuery), helpers.Int("id", id), helpers.Int("number of incoming websockets", nh.incomingConnections.Len()))
+	*nh.isReadinessReady = true
 
 	// ----------------------------------------------------- 3
 	// register route in master if master configured
