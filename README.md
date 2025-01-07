@@ -1,3 +1,6 @@
+# Archived 
+This repository has been archived and is no longer in active use or maintained, as part of the Gateway component [deprecation](https://github.com/kubescape/helm-charts/pull/565).
+
 # Gateway
 
 The Gateway enables broadcasting a single message to the different microservices running in the cluster.
